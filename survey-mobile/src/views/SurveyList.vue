@@ -1,7 +1,8 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { Search, List, Cell, Badge, Empty, Toast } from 'vant'
+import { Search, List, Cell, Badge, Empty } from 'vant'
+import { showToast } from 'vant'
 import dayjs from 'dayjs'
 import { surveyApi } from '../services/api'
 
@@ -35,9 +36,9 @@ const goToSurvey = (survey) => {
   if (survey.status === 'ongoing') {
     router.push(`/survey/${survey.id}`)
   } else if (survey.status === 'upcoming') {
-    Toast.info('问卷尚未开始')
+    showToast('问卷尚未开始')
   } else if (survey.status === 'ended') {
-    Toast.info('问卷已结束')
+    showToast('问卷已结束')
   }
 }
 
@@ -69,7 +70,7 @@ onMounted(async () => {
       filteredSurveys.value = [...response.data]
     }
   } catch (error) {
-    Toast.info('加载失败，请重试')
+    showToast('加载失败，请重试')
     console.error('加载问卷列表失败:', error)
   } finally {
     loading.value = false

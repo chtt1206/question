@@ -13,6 +13,8 @@ public class CorsConfig {
     public CorsFilter corsFilter() {
         CorsConfiguration config = new CorsConfiguration();
         config.addAllowedOrigin("http://localhost:5174"); // 允许的前端域名
+        config.addAllowedOrigin("http://localhost:5175"); // 允许移动端项目的域名
+        config.addAllowedOrigin("http://localhost:5176"); // 允许移动端项目的域名
         config.addAllowedMethod("GET");
         config.addAllowedMethod("POST");
         config.addAllowedMethod("PUT");

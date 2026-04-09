@@ -2,7 +2,7 @@ import axios from 'axios'
 
 // 创建axios实例
 const api = axios.create({
-  baseURL: 'http://localhost:8080', // 后端API地址
+  baseURL: 'http://localhost:8081/api', // 后端API地址
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json'
@@ -35,135 +35,54 @@ api.interceptors.response.use(
 export const surveyApi = {
   // 获取问卷列表
   getSurveyList: () => {
-    // 模拟数据
-    return new Promise(resolve => {
-      setTimeout(() => {
-        resolve({
-          code: 200,
-          data: [
-            {
-              id: 1,
-              title: '2024年员工安全培训考试',
-              status: 'ongoing',
-              startTime: '2026-04-10T08:00',
-              endTime: '2026-04-20T23:59',
-              answered: false,
-              questions: 3
-            },
-            {
-              id: 2,
-              title: '客户满意度调查',
-              status: 'ongoing',
-              startTime: '2026-04-01T00:00',
-              endTime: '2026-04-30T23:59',
-              answered: true,
-              questions: 5
-            }
-          ]
-        })
-      }, 300)
-    })
+    return api.get('/survey')
   },
 
   // 获取问卷详情
   getSurveyDetail: (id) => {
-    // 模拟数据
-    return new Promise(resolve => {
-      setTimeout(() => {
-        resolve({
-          code: 200,
-          data: {
-            id: 1,
-            title: '2024年员工安全培训考试',
-            description: '请认真完成以下安全培训考试题目',
-            timeLimit: 30,
-            questions: [
-              {
-                id: 1,
-                type: 'basic',
-                text: '姓名',
-                required: true,
-                placeholder: '请输入您的姓名'
-              },
-              {
-                id: 2,
-                type: 'basic',
-                text: '部门',
-                required: true,
-                placeholder: '请输入您的部门'
-              },
-              {
-                id: 3,
-                type: 'basic',
-                text: '工号',
-                required: true,
-                placeholder: '请输入您的工号'
-              },
-              {
-                id: 4,
-                type: 'single',
-                text: '以下哪个是正确的手部卫生步骤？',
-                required: true,
-                options: [
-                  { id: 1, text: '使用冷水冲洗' },
-                  { id: 2, text: '使用肥皂搓洗至少20秒' },
-                  { id: 3, text: '仅使用免洗洗手液' }
-                ]
-              },
-              {
-                id: 5,
-                type: 'multiple',
-                text: '以下哪些属于火灾逃生的正确做法？',
-                required: true,
-                options: [
-                  { id: 1, text: '用湿毛巾捂住口鼻' },
-                  { id: 2, text: '乘坐电梯快速下楼' },
-                  { id: 3, text: '弯腰低姿前进' },
-                  { id: 4, text: '从窗户直接跳下' }
-                ]
-              },
-              {
-                id: 6,
-                type: 'single',
-                text: '电器着火时，应首先使用水基灭火器扑救。',
-                required: true,
-                options: [
-                  { id: 1, text: '正确' },
-                  { id: 2, text: '错误' }
-                ]
-              }
-            ]
-          }
-        })
-      }, 300)
-    })
+    return api.get(`/survey/${id}`)
   },
 
   // 提交答案
   submitAnswer: (surveyId, answers) => {
-    // 模拟数据
-    return new Promise(resolve => {
-      setTimeout(() => {
-        resolve({
-          code: 200,
-          data: {
-            success: true,
-            message: '提交成功'
-          }
-        })
-      }, 800)
-    })
+    // 构建提交数据
+    const submitData = {
+      surveyId: parseInt(surveyId),
+      userId: 'user_' + Date.now(), // 临时用户ID
+      userName: answers[1] || '匿名用户', // 使用姓名作为userName
+      answers: Object.entries(answers).map(([questionId, answer]) => {
+        const item = {
+          questionId: parseInt(questionId)
+        }
+        
+        // 根据题目类型处理答案
+        if (typeof answer === 'string') {
+          // 基础信息题或输入题
+          item.textAnswer = answer
+        } else if (Array.isArray(answer)) {
+          // 多选题
+          item.selectedOptions = answer.map(opt => parseInt(opt))
+        } else {
+          // 单选题
+          item.selectedOptions = [parseInt(answer)]
+        }
+        
+        return item
+      })
+    }
+    
+    return api.post('/answer', submitData)
   },
 
   // 获取答题结果
   getAnswerResult: (surveyId) => {
-    // 模拟数据
+    // 模拟数据，实际项目中需要根据后端接口调整
     return new Promise(resolve => {
       setTimeout(() => {
         resolve({
           code: 200,
           data: {
-            surveyId: 1,
+            surveyId: parseInt(surveyId),
             surveyTitle: '2024年员工安全培训考试',
             score: 80,
             totalScore: 100,

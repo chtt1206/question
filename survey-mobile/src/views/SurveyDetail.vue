@@ -1,7 +1,8 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { Button, RadioGroup, Radio, CheckboxGroup, Checkbox, Field, Toast, Progress, CountDown } from 'vant'
+import { Button, RadioGroup, Radio, CheckboxGroup, Checkbox, Field, Progress, CountDown } from 'vant'
+import { showToast, showLoading } from 'vant'
 import { surveyApi } from '../services/api'
 
 const router = useRouter()
@@ -103,7 +104,7 @@ const nextQuestion = () => {
   if (canNextQuestion.value && currentQuestionIndex.value < surveyQuestions.value.length - 1) {
     currentQuestionIndex.value++
   } else if (!canNextQuestion.value) {
-    Toast.info('请完成当前题目')
+    showToast('请完成当前题目')
   }
 }
 
@@ -120,28 +121,28 @@ const startSurvey = () => {
     showBasicInfo.value = false
     currentQuestionIndex.value = 0
   } else {
-    Toast.info('请完成所有基础信息题')
+    showToast('请完成所有基础信息题')
   }
 }
 
 // 提交问卷
 const submitSurvey = async () => {
   if (!canSubmit.value) {
-    Toast.info('请完成所有必答题')
+    showToast('请完成所有必答题')
     return
   }
   
   try {
-    Toast.loading('提交中...')
+    showLoading('提交中...')
     const response = await surveyApi.submitAnswer(surveyId.value, answers.value)
     if (response.code === 200) {
-      Toast.success('提交成功！')
+      showToast('提交成功！')
       router.push(`/result/${surveyId.value}`)
     } else {
-      Toast.info('提交失败，请重试')
+      showToast('提交失败，请重试')
     }
   } catch (error) {
-    Toast.info('提交失败，请重试')
+    showToast('提交失败，请重试')
     console.error('提交答案失败:', error)
   } finally {
     // 清理
@@ -155,7 +156,7 @@ const startCountdown = () => {
       timeRemaining.value--
     } else {
       clearInterval(timer.value)
-      Toast.info('时间到！自动提交')
+      showToast('时间到！自动提交')
       submitSurvey()
     }
   }, 1000)
@@ -181,10 +182,10 @@ onMounted(async () => {
         showBasicInfo.value = false
       }
     } else {
-      Toast.info('加载失败，请重试')
+      showToast('加载失败，请重试')
     }
   } catch (error) {
-    Toast.info('加载失败，请重试')
+    showToast('加载失败，请重试')
     console.error('加载问卷详情失败:', error)
   } finally {
     loading.value = false
@@ -207,7 +208,7 @@ onUnmounted(() => {
         ← 返回
       </div>
       <div class="header-center">
-        问卷答题
+        {{ showBasicInfo ? '基础信息' : '问卷答题' }}
       </div>
       <div class="header-right">
         <van-count-down :time="timeRemaining * 1000" format="mm:ss" />
@@ -228,91 +229,129 @@ onUnmounted(() => {
         <p class="survey-description">{{ survey.description }}</p>
       </div>
 
-      <!-- 进度条 -->
-      <div class="progress-container">
-        <van-progress :percentage="progress" :stroke-width="8" />
-        <div class="progress-text">
-          {{ currentQuestionIndex + 1 }} / {{ survey.questions.length }}
+      <!-- 基础信息题区域 -->
+      <div v-if="showBasicInfo" class="basic-info-container">
+        <h2 class="section-title">基础信息</h2>
+        <div class="basic-info-form">
+          <div 
+            v-for="question in basicInfoQuestions" 
+            :key="question.id"
+            class="basic-info-item"
+          >
+            <div class="basic-info-label">
+              {{ question.text }}
+              <span v-if="question.required" class="required-mark">*</span>
+            </div>
+            <van-field
+              v-model="answers[question.id]"
+              :placeholder="question.placeholder"
+              @change="(value) => handleBasicInfoAnswer(question.id, value)"
+              class="basic-info-input"
+            />
+          </div>
+        </div>
+
+        <!-- 进入问卷答题按钮 -->
+        <div class="start-survey-button">
+          <van-button 
+            type="primary"
+            @click="startSurvey"
+            :disabled="!canStartSurvey"
+            class="start-button"
+          >
+            去问卷答题
+          </van-button>
         </div>
       </div>
 
-      <!-- 题目区域 -->
-      <div class="question-container">
-        <div class="question-header">
-          <span class="question-number">第 {{ currentQuestionIndex + 1 }} 题</span>
-          <span v-if="currentQuestion.required" class="required-mark">*</span>
+      <!-- 问卷答题区域 -->
+      <div v-else class="survey-questions-container">
+        <!-- 进度条 -->
+        <div class="progress-container">
+          <van-progress :percentage="progress" :stroke-width="8" />
+          <div class="progress-text">
+            {{ currentQuestionIndex + 1 }} / {{ surveyQuestions.length }}
+          </div>
         </div>
-        <h3 class="question-text">{{ currentQuestion.text }}</h3>
 
-        <!-- 选项区域 -->
-        <div class="options-container">
-          <!-- 单选题 -->
-          <van-radio-group
-            v-if="currentQuestion.type === 'single'"
-            v-model="answers[currentQuestion.id]"
-            @change="(value) => handleSingleChoice(currentQuestion.id, value)"
-          >
-            <van-radio 
-              v-for="option in currentQuestion.options" 
-              :key="option.id" 
-              :name="option.id"
-              class="option-item"
+        <!-- 题目区域 -->
+        <div class="question-container">
+          <div class="question-header">
+            <span class="question-number">第 {{ currentQuestionIndex + 1 }} 题</span>
+            <span v-if="currentQuestion.required" class="required-mark">*</span>
+          </div>
+          <h3 class="question-text">{{ currentQuestion.text }}</h3>
+
+          <!-- 选项区域 -->
+          <div class="options-container">
+            <!-- 单选题 -->
+            <van-radio-group
+              v-if="currentQuestion.type === 'single'"
+              v-model="answers[currentQuestion.id]"
+              @change="(value) => handleSingleChoice(currentQuestion.id, value)"
             >
-              {{ option.text }}
-            </van-radio>
-          </van-radio-group>
+              <van-radio 
+                v-for="option in currentQuestion.options" 
+                :key="option.id" 
+                :name="option.id"
+                class="option-item"
+              >
+                {{ option.text }}
+              </van-radio>
+            </van-radio-group>
 
-          <!-- 多选题 -->
-          <van-checkbox-group
-            v-else-if="currentQuestion.type === 'multiple'"
-            v-model="answers[currentQuestion.id]"
-            @change="(value) => handleMultipleChoice(currentQuestion.id, value)"
-          >
-            <van-checkbox 
-              v-for="option in currentQuestion.options" 
-              :key="option.id" 
-              :name="option.id"
-              class="option-item"
+            <!-- 多选题 -->
+            <van-checkbox-group
+              v-else-if="currentQuestion.type === 'multiple'"
+              v-model="answers[currentQuestion.id]"
+              @change="(value) => handleMultipleChoice(currentQuestion.id, value)"
             >
-              {{ option.text }}
-            </van-checkbox>
-          </van-checkbox-group>
+              <van-checkbox 
+                v-for="option in currentQuestion.options" 
+                :key="option.id" 
+                :name="option.id"
+                class="option-item"
+              >
+                {{ option.text }}
+              </van-checkbox>
+            </van-checkbox-group>
 
-          <!-- 输入题 -->
-          <van-field
-            v-else-if="currentQuestion.type === 'input'"
-            v-model="answers[currentQuestion.id]"
-            placeholder="请输入答案"
-            @change="(value) => handleInputAnswer(currentQuestion.id, value)"
-            class="input-answer"
-          />
+            <!-- 输入题 -->
+            <van-field
+              v-else-if="currentQuestion.type === 'input'"
+              v-model="answers[currentQuestion.id]"
+              placeholder="请输入答案"
+              @change="(value) => handleInputAnswer(currentQuestion.id, value)"
+              class="input-answer"
+            />
+          </div>
         </div>
-      </div>
 
-      <!-- 导航按钮 -->
-      <div class="navigation-buttons">
-        <van-button 
-          @click="prevQuestion"
-          :disabled="currentQuestionIndex === 0"
-          class="nav-button"
-        >
-          上一题
-        </van-button>
-        <van-button 
-          @click="nextQuestion"
-          :disabled="currentQuestionIndex === survey.questions.length - 1"
-          class="nav-button"
-        >
-          下一题
-        </van-button>
-        <van-button 
-          type="primary"
-          @click="submitSurvey"
-          :disabled="!canSubmit"
-          class="submit-button"
-        >
-          提交
-        </van-button>
+        <!-- 导航按钮 -->
+        <div class="navigation-buttons">
+          <van-button 
+            @click="prevQuestion"
+            :disabled="currentQuestionIndex === 0"
+            class="nav-button"
+          >
+            上一题
+          </van-button>
+          <van-button 
+            @click="nextQuestion"
+            :disabled="currentQuestionIndex === surveyQuestions.length - 1 || !canNextQuestion"
+            class="nav-button"
+          >
+            下一题
+          </van-button>
+          <van-button 
+            type="primary"
+            @click="submitSurvey"
+            :disabled="!canSubmit"
+            class="submit-button"
+          >
+            提交
+          </van-button>
+        </div>
       </div>
     </div>
   </div>
@@ -416,6 +455,81 @@ onUnmounted(() => {
   color: var(--text-secondary);
   line-height: 1.5;
   padding: 0 var(--spacing-lg);
+}
+
+/* 基础信息题样式 */
+.basic-info-container {
+  background-color: var(--card-background);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-lg);
+  box-shadow: var(--shadow-sm);
+  margin-bottom: var(--spacing-xl);
+}
+
+.section-title {
+  font-size: var(--font-size-xl);
+  font-weight: 600;
+  margin-bottom: var(--spacing-lg);
+  color: var(--text-primary);
+  text-align: center;
+  padding-bottom: var(--spacing-md);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.basic-info-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+
+.basic-info-item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.basic-info-label {
+  font-size: var(--font-size-base);
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.basic-info-input {
+  width: 100%;
+  padding: var(--spacing-md);
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-base);
+  touch-action: manipulation;
+  transition: all var(--transition-normal);
+}
+
+.basic-info-input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px var(--primary-light);
+}
+
+.start-survey-button {
+  margin-top: var(--spacing-xl);
+  display: flex;
+  justify-content: center;
+}
+
+.start-button {
+  width: 100%;
+  max-width: 300px;
+  height: 48px;
+  border-radius: var(--radius-md);
+  touch-action: manipulation;
+  font-size: var(--font-size-base);
+  font-weight: 500;
+  transition: all var(--transition-normal);
+}
+
+/* 问卷答题区域样式 */
+.survey-questions-container {
+  width: 100%;
 }
 
 .progress-container {
@@ -598,6 +712,7 @@ onUnmounted(() => {
     padding: var(--spacing-md);
   }
   
+  .basic-info-container,
   .question-container {
     padding: var(--spacing-md);
     margin-bottom: var(--spacing-lg);
@@ -605,6 +720,10 @@ onUnmounted(() => {
   
   .survey-title {
     font-size: var(--font-size-xl);
+  }
+  
+  .section-title {
+    font-size: var(--font-size-lg);
   }
   
   .question-text {
@@ -630,6 +749,7 @@ onUnmounted(() => {
     padding: var(--spacing-sm);
   }
   
+  .basic-info-container,
   .question-container {
     padding: var(--spacing-sm);
     margin-bottom: var(--spacing-md);
@@ -641,13 +761,18 @@ onUnmounted(() => {
   }
   
   .nav-button,
-  .submit-button {
+  .submit-button,
+  .start-button {
     width: 100%;
     height: 44px;
   }
   
   .survey-title {
     font-size: var(--font-size-lg);
+  }
+  
+  .section-title {
+    font-size: var(--font-size-base);
   }
   
   .question-text {
@@ -658,7 +783,8 @@ onUnmounted(() => {
     padding: var(--spacing-sm);
   }
   
-  .input-answer {
+  .input-answer,
+  .basic-info-input {
     padding: var(--spacing-sm);
   }
 }
