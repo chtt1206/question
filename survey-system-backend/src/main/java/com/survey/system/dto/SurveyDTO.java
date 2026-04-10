@@ -12,6 +12,7 @@ public class SurveyDTO {
     private String endTime;
     private Boolean allowRepeat;
     private Integer timeLimit;
+    private Integer passingScore;
     private String status;
     private List<QuestionDTO> questions;
     private String createdAt;

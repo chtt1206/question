@@ -117,6 +117,69 @@ export const surveyApi = {
             }
           }
         }
+        // 解析answers字段
+        let answers = [];
+        try {
+          if (record.answers) {
+            const parsedAnswers = JSON.parse(record.answers);
+            // 构建答题详情（跳过基础信息题）
+            answers = parsedAnswers.map((answerItem, index) => {
+              // 找到对应的问题
+              const question = survey.questions ? survey.questions.find(q => q.id === answerItem.questionId) : null;
+              // 跳过基础信息题
+              if (question && question.questionType === 'BASIC') {
+                return null;
+              }
+              let userAnswer = '';
+              let questionText = question ? question.text : `问题 ${index + 1}`;
+              let isCorrect = false;
+              
+              // 处理用户答案
+              if (answerItem.textAnswer) {
+                userAnswer = answerItem.textAnswer;
+              } else if (answerItem.selectedOptions) {
+                if (question && question.options) {
+                  userAnswer = answerItem.selectedOptions.map(optId => {
+                    const option = question.options.find(opt => opt.id === optId);
+                    return option ? option.text : optId;
+                  }).join(', ');
+                }
+              }
+              
+              // 处理正确答案
+              let correctAnswer = '';
+              if (question) {
+                if (question.type === 'single' || question.type === 'multiple') {
+                  // 选择题
+                  if (question.options) {
+                    const correctOptions = question.options.filter(opt => opt.isCorrect);
+                    if (correctOptions.length > 0) {
+                      const correctOptionIds = correctOptions.map(opt => opt.id);
+                      isCorrect = JSON.stringify(answerItem.selectedOptions?.sort()) === JSON.stringify(correctOptionIds.sort());
+                      // 构建正确答案文本
+                      correctAnswer = correctOptions.map(opt => opt.text).join(', ');
+                    }
+                  }
+                } else if (question.type === 'input') {
+                  // 填空题
+                  isCorrect = answerItem.textAnswer === question.correctAnswer;
+                  correctAnswer = question.correctAnswer || '';
+                }
+              }
+              
+              return {
+                questionId: answerItem.questionId,
+                questionText: questionText,
+                userAnswer: userAnswer,
+                correctAnswer: correctAnswer,
+                isCorrect: isCorrect
+              };
+            }).filter(item => item !== null); // 过滤掉null值
+          }
+        } catch (error) {
+          console.error('解析答题详情失败:', error);
+        }
+        
         // 构建结果数据结构
         return {
           surveyId: record.surveyId,
@@ -124,10 +187,11 @@ export const surveyApi = {
           totalScore: totalScore,
           correctCount: record.correctCount,
           totalQuestions: totalQuestions,
-          timeUsed: record.answerTime || 0,
+          timeUsed: record.answerTime || 0, // 答题时长（秒）
           rank: rank,
           totalParticipants: totalParticipants,
-          answers: [] // 暂时返回空数组，实际项目中需要解析answers字段
+          passingScore: survey.passingScore || 0, // 默认60分
+          answers: answers
         }
       } else {
         // 如果没有答案记录，返回默认数据

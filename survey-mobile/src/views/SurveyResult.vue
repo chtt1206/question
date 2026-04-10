@@ -74,18 +74,21 @@ const reTakeSurvey = () => {
       <!-- 结果概览 -->
       <div class="result-overview">
         <div class="result-content">
-          <div class="result-icon" :class="{ 'success': result.score >= 60, 'error': result.score < 60 }">
-            {{ result.score >= 60 ? '✓' : '✗' }}
+          <div v-if="result.passingScore">
+            <div class="result-icon" :class="{ 'success': result.score >= result.passingScore, 'error': result.score < result.passingScore }">
+              {{ result.score >= result.passingScore ? '✓' : '✗' }}
+            </div>
+            <h2 class="result-title">{{ result.score >= result.passingScore ? '恭喜你通过了考试！' : '很遗憾，未能通过考试' }}</h2>
+            <p class="result-description">通过分数：{{ result.passingScore }}分</p>
+            <p class="result-description">得分：{{ result.score }}/{{ result.totalScore }}分</p>
           </div>
-          <h2 class="result-title">{{ result.score >= 60 ? '恭喜你通过了考试！' : '很遗憾，未能通过考试' }}</h2>
-          <p class="result-description">得分：{{ result.score }}/{{ result.totalScore }}分</p>
           <div class="result-stats">
             <div class="stat-item">
               <span class="stat-value">{{ result.correctCount }}/{{ result.totalQuestions }}</span>
               <span class="stat-label">答对题数</span>
             </div>
             <div class="stat-item">
-              <span class="stat-value">{{ result.timeUsed }}分钟</span>
+              <span class="stat-value">{{ Math.floor(result.timeUsed / 60) }}:{{ (result.timeUsed % 60).toString().padStart(2, '0') }}</span>
               <span class="stat-label">用时</span>
             </div>
             <div class="stat-item">
@@ -100,20 +103,30 @@ const reTakeSurvey = () => {
       <div class="answer-details">
         <h3 class="section-title">答题详情</h3>
         <van-cell-group>
-          <van-cell 
-            v-for="(answer, index) in result.answers" 
-            :key="answer.questionId"
-            :title="`第${index + 1}题：${answer.questionText}`"
-            :label="`你的答案：${answer.userAnswer}`"
-            class="answer-item"
-          >
-            <template #right>
-              <van-badge 
-                :type="answer.isCorrect ? 'success' : 'danger'"
-                :text="answer.isCorrect ? '正确' : '错误'"
-              />
+          <template v-for="(answer, index) in result.answers" :key="answer.questionId">
+          <van-cell  class="answer-item" >
+            <template #title>
+              <div class="question-title">
+                <span class="question-text">第{{ index + 1 }}题：{{ answer.questionText }}</span>
+                <span 
+                  :class="['status-tag', answer.isCorrect ? 'correct' : 'wrong']"
+                >
+                  {{ answer.isCorrect ? '正确' : '错误' }}
+                </span>
+              </div>
+            </template>
+            </van-cell>
+            <van-cell >
+            <template #default>
+              <div class="answer-content">
+                <p v-if="!answer.isCorrect" class="user-answer">你的答案：{{ answer.userAnswer }}</p>
+                <p v-if="!answer.isCorrect && answer.correctAnswer" class="correct-answer">
+                  正确答案：{{ answer.correctAnswer }}
+                </p>
+              </div>
             </template>
           </van-cell>
+            </template>
         </van-cell-group>
       </div>
 
@@ -368,6 +381,56 @@ const reTakeSurvey = () => {
 
 .answer-item:last-child {
   border-bottom: none;
+}
+
+.answer-content {
+  margin-top: var(--spacing-xs);
+}
+
+.user-answer {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  margin-bottom: var(--spacing-xs);
+  line-height: 1.3;
+}
+
+.correct-answer {
+  font-size: var(--font-size-sm);
+  color: var(--success-color);
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+.question-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: var(--spacing-xs);
+}
+
+.question-text {
+  flex: 1;
+  min-width: 0;
+  word-break: break-word;
+}
+
+.status-tag {
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.status-tag.correct {
+  background-color: var(--success-light);
+  color: var(--success-color);
+}
+
+.status-tag.wrong {
+  background-color: var(--danger-light);
+  color: var(--danger-color);
 }
 
 .action-buttons {

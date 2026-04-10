@@ -155,8 +155,8 @@ const submitSurvey = async () => {
       forbidClick: true,
       loading: true
     })
-    // 计算答题时长（分钟）
-    const answerTime = startTime.value ? Math.round((Date.now() - startTime.value) / 1000 / 60) : 0
+    // 计算答题时长（秒）
+            const answerTime = startTime.value ? Math.round((Date.now() - startTime.value) / 1000) : 0
     const result = await surveyApi.submitAnswer(surveyId.value, answers.value, answerTime)
     // 保存 userId 到本地存储
     if (result && result.userId) {

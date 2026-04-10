@@ -8,7 +8,7 @@ public class AnswerSubmitDTO {
     private Long surveyId;
     private String userId;
     private String userName;
-    private Integer answerTime; // 答题时长（分钟）
+    private Integer answerTime; // 答题时长（秒）
     private List<AnswerItemDTO> answers;
     
     @Data

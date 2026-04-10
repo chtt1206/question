@@ -238,6 +238,7 @@ public class SurveyServiceImpl implements SurveyService {
             }
             survey.setAllowRepeat(settingsDTO.getAllowRepeat());
             survey.setTimeLimit(settingsDTO.getTimeLimit());
+            survey.setPassingScore(settingsDTO.getPassingScore());
             survey.setUpdatedAt(LocalDateTime.now());
             surveyMapper.updateById(survey);
         }

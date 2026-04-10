@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS survey (
     end_time DATETIME,
     allow_repeat BOOLEAN DEFAULT FALSE,
     time_limit INT,
+    passing_score INT,
     status VARCHAR(20) DEFAULT 'DRAFT',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP

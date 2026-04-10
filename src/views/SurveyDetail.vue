@@ -88,7 +88,8 @@ const settings = reactive({
   startTime: null,
   endTime: null,
   allowRepeat: false,
-  timeLimit: null
+  timeLimit: null,
+  passingScore: null
 });
 
 // 统计数据
@@ -175,6 +176,7 @@ const initSurveyData = async () => {
       settings.endTime = surveyData.endTime ? dayjs(surveyData.endTime) : null;
       settings.allowRepeat = surveyData.allowRepeat || false;
       settings.timeLimit = surveyData.timeLimit || null;
+      settings.passingScore = surveyData.passingScore || null;
       
       // 清空现有题目
       basicQuestions.length = 0;
@@ -686,7 +688,8 @@ const saveSettings = async () => {
       startTime: settings.startTime.format('YYYY-MM-DD HH:mm:ss'),
       endTime: settings.endTime.format('YYYY-MM-DD HH:mm:ss'),
       allowRepeat: settings.allowRepeat,
-      timeLimit: settings.timeLimit
+      timeLimit: settings.timeLimit,
+      passingScore: settings.passingScore
     };
     
     // 调用API保存设置
@@ -1133,6 +1136,10 @@ const removeOption = (index) => {
                     <label>⏱️ 答题时间要求 (分钟)</label>
                     <a-input-number v-model:value="settings.timeLimit" placeholder="0表示不限时" />
                   </div>
+                  <div class="setting-field">
+                    <label>🎯 通过考试分数</label>
+                    <a-input-number v-model:value="settings.passingScore" placeholder="设置通过考试的最低分数" />
+                  </div>
                 </div>
                 <div class="flex-between">
                   <div class="btn-group">
@@ -1254,6 +1261,10 @@ const removeOption = (index) => {
                   <div class="setting-field">
                     <label>⏱️ 答题时间要求 (分钟)</label>
                     <a-input-number v-model:value="settings.timeLimit" placeholder="0表示不限时" />
+                  </div>
+                  <div class="setting-field">
+                    <label>🎯 通过考试分数</label>
+                    <a-input-number v-model:value="settings.passingScore" placeholder="设置通过考试的最低分数" />
                   </div>
                 </div>
                 <div class="flex-between">
