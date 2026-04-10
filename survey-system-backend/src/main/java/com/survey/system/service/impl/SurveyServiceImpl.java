@@ -1,6 +1,6 @@
 package com.survey.system.service.impl;
 
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.survey.system.dao.SurveyMapper;
 import com.survey.system.dao.QuestionMapper;
 import com.survey.system.dao.OptionMapper;
@@ -90,7 +90,10 @@ public class SurveyServiceImpl implements SurveyService {
         surveyMapper.updateById(survey);
 
         // 删除旧的问题和选项
-        questionMapper.delete(new QueryWrapper<Question>().eq("survey_id", survey.getId()));
+        questionMapper.delete(
+            new LambdaQueryWrapper<Question>()
+                .eq(Question::getSurveyId, survey.getId())
+        );
 
         if (surveyDTO.getQuestions() != null) {
             for (QuestionDTO questionDTO : surveyDTO.getQuestions()) {
@@ -121,12 +124,12 @@ public class SurveyServiceImpl implements SurveyService {
     @Transactional
     public void deleteSurvey(Long id) {
         // 删除选项
-        List<Question> questions = questionMapper.selectList(new QueryWrapper<Question>().eq("survey_id", id));
+        List<Question> questions = questionMapper.selectList(new LambdaQueryWrapper<Question>().eq(Question::getSurveyId, id));
         for (Question question : questions) {
-            optionMapper.delete(new QueryWrapper<Option>().eq("question_id", question.getId()));
+            optionMapper.delete(new LambdaQueryWrapper<Option>().eq(Option::getQuestionId, question.getId()));
         }
         // 删除问题
-        questionMapper.delete(new QueryWrapper<Question>().eq("survey_id", id));
+        questionMapper.delete(new LambdaQueryWrapper<Question>().eq(Question::getSurveyId, id));
         // 删除问卷
         surveyMapper.deleteById(id);
     }
@@ -153,13 +156,13 @@ public class SurveyServiceImpl implements SurveyService {
             surveyDTO.setCreatedAt(survey.getCreatedAt().format(formatter));
         }
 
-        List<Question> questions = questionMapper.selectList(new QueryWrapper<Question>().eq("survey_id", id));
+        List<Question> questions = questionMapper.selectList(new LambdaQueryWrapper<Question>().eq(Question::getSurveyId, id));
         List<QuestionDTO> questionDTOs = new ArrayList<>();
         for (Question question : questions) {
             QuestionDTO questionDTO = new QuestionDTO();
             BeanUtils.copyProperties(question, questionDTO);
 
-            List<Option> options = optionMapper.selectList(new QueryWrapper<Option>().eq("question_id", question.getId()));
+            List<Option> options = optionMapper.selectList(new LambdaQueryWrapper<Option>().eq(Option::getQuestionId, question.getId()));
             List<OptionDTO> optionDTOs = new ArrayList<>();
             for (Option option : options) {
                 OptionDTO optionDTO = new OptionDTO();

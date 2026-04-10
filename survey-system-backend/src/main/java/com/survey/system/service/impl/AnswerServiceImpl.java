@@ -1,5 +1,6 @@
 package com.survey.system.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.survey.system.dao.AnswerRecordMapper;
@@ -36,7 +37,12 @@ public class AnswerServiceImpl implements AnswerService {
             double score = 0;
             int correctCount = 0;
 
-            List<Question> questions = questionMapper.selectBySurveyId(answerSubmitDTO.getSurveyId());
+            // 使用MyBatis-Plus查询问卷的所有问题
+            List<Question> questions = questionMapper.selectList(
+                new LambdaQueryWrapper<Question>()
+                    .eq(Question::getSurveyId, answerSubmitDTO.getSurveyId())
+            );
+            
             for (Question question : questions) {
                 // 查找对应的答案
                 for (AnswerSubmitDTO.AnswerItemDTO answerItem : answerSubmitDTO.getAnswers()) {
@@ -44,10 +50,13 @@ public class AnswerServiceImpl implements AnswerService {
                         // 检查是否正确
                         if ("single".equals(question.getType()) || "multiple".equals(question.getType())) {
                             // 选择题
-                            List<Option> options = optionMapper.selectByQuestionId(question.getId());
+                            List<Option> options = optionMapper.selectList(
+                                new LambdaQueryWrapper<Option>()
+                                    .eq(Option::getQuestionId, question.getId())
+                            );
                             boolean isCorrect = true;
                             for (Option option : options) {
-                                boolean selected = answerItem.getSelectedOptions().contains(option.getId());
+                                boolean selected = answerItem.getSelectedOptions() != null && answerItem.getSelectedOptions().contains(option.getId());
                                 if (option.getIsCorrect() != selected) {
                                     isCorrect = false;
                                     break;
@@ -82,16 +91,26 @@ public class AnswerServiceImpl implements AnswerService {
             answerRecordMapper.insert(answerRecord);
         } catch (JsonProcessingException e) {
             e.printStackTrace();
+            throw new RuntimeException("答案提交失败：" + e.getMessage());
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException("答案提交失败：" + e.getMessage());
         }
     }
 
     @Override
     public List<AnswerRecord> getAnswersBySurveyId(Long surveyId) {
-        return answerRecordMapper.selectBySurveyId(surveyId);
+        return answerRecordMapper.selectList(
+            new LambdaQueryWrapper<AnswerRecord>()
+                .eq(AnswerRecord::getSurveyId, surveyId)
+        );
     }
 
     @Override
     public Integer getAnswerCountBySurveyId(Long surveyId) {
-        return answerRecordMapper.countBySurveyId(surveyId);
+        return Math.toIntExact(answerRecordMapper.selectCount(
+            new LambdaQueryWrapper<AnswerRecord>()
+                .eq(AnswerRecord::getSurveyId, surveyId)
+        ));
     }
 }

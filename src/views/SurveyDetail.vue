@@ -879,11 +879,6 @@ const saveNewQuestion = () => {
     questionToAdd.score = newQuestion.score;
   }
   
-  // 添加选项（如果不是输入框类型）
-  if (newQuestion.type !== 'input') {
-    questionToAdd.options = [...newQuestion.options.filter(option => option.text.trim())];
-  }
-  
   // 仅在问卷题目标签页添加正确答案字段和监听器
   if (topTab.value !== 'basic') {
     // 验证选项或正确答案
@@ -902,7 +897,7 @@ const saveNewQuestion = () => {
       }
       
       // 验证正确答案
-      const correctOptions = newQuestion.options.filter(option => option.isCorrect);
+      const correctOptions = validOptions.filter(option => option.isCorrect);
       if (correctOptions.length === 0) {
         alert('请设置正确答案');
         return;
@@ -913,17 +908,37 @@ const saveNewQuestion = () => {
         return;
       }
     }
-    
+  }
+  
+  // 添加选项（如果不是输入框类型）
+  if (newQuestion.type !== 'input') {
+    questionToAdd.options = [...newQuestion.options.filter(option => option.text.trim())];
+  }
+  
+  // 仅在问卷题目标签页添加正确答案字段和监听器
+  if (topTab.value !== 'basic') {
     // 添加正确答案字段
     if (newQuestion.type === 'multiple') {
-      questionToAdd.correctOptions = newQuestion.correctOptions;
-      questionToAdd._correctOptions = newQuestion.correctOptions;
+      // 过滤掉空选项的索引
+      const validOptionIndices = newQuestion.options
+        .map((option, index) => option.text.trim() ? index : -1)
+        .filter(index => index !== -1);
+      // 更新 correctOptions，确保索引与过滤后的选项数组匹配
+      questionToAdd.correctOptions = newQuestion.correctOptions
+        .filter(index => validOptionIndices.includes(index))
+        .map(index => validOptionIndices.indexOf(index));
+      questionToAdd._correctOptions = questionToAdd.correctOptions;
     } else if (newQuestion.type === 'input') {
       questionToAdd.correctAnswer = newQuestion.correctAnswer;
       questionToAdd._correctAnswer = newQuestion.correctAnswer;
     } else {
-      questionToAdd.correctOption = newQuestion.correctOption;
-      questionToAdd._correctOption = newQuestion.correctOption;
+      // 过滤掉空选项的索引
+      const validOptionIndices = newQuestion.options
+        .map((option, index) => option.text.trim() ? index : -1)
+        .filter(index => index !== -1);
+      // 更新 correctOption，确保索引与过滤后的选项数组匹配
+      questionToAdd.correctOption = validOptionIndices.indexOf(newQuestion.correctOption);
+      questionToAdd._correctOption = questionToAdd.correctOption;
     }
     
     // 为新题目添加属性监听
@@ -934,9 +949,11 @@ const saveNewQuestion = () => {
         },
         set(value) {
           this._correctOptions = value;
-          this.options.forEach((option, index) => {
-            option.isCorrect = value.includes(index);
-          });
+          if (this.options) {
+            this.options.forEach((option, index) => {
+              option.isCorrect = value.includes(index);
+            });
+          }
         },
         enumerable: true,
         configurable: true
@@ -959,9 +976,11 @@ const saveNewQuestion = () => {
         },
         set(value) {
           this._correctOption = value;
-          this.options.forEach((option, index) => {
-            option.isCorrect = index === value;
-          });
+          if (this.options) {
+            this.options.forEach((option, index) => {
+              option.isCorrect = index === value;
+            });
+          }
         },
         enumerable: true,
         configurable: true

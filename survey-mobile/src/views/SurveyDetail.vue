@@ -1,8 +1,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { Button, RadioGroup, Radio, CheckboxGroup, Checkbox, Field, Progress, CountDown } from 'vant'
-import { showToast, showLoading } from 'vant'
+import { Button, RadioGroup, Radio, CheckboxGroup, Checkbox, Field, Progress, CountDown, showToast } from 'vant'
 import { surveyApi } from '../services/api'
 
 const router = useRouter()
@@ -20,13 +19,13 @@ const showBasicInfo = ref(true) // 是否显示基础信息题
 // 计算基础信息题
 const basicInfoQuestions = computed(() => {
   if (!survey.value) return []
-  return survey.value.questions.filter(q => q.type === 'basic')
+  return survey.value.questions.filter(q => q.questionType === 'BASIC')
 })
 
 // 计算普通问卷题
 const surveyQuestions = computed(() => {
   if (!survey.value) return []
-  return survey.value.questions.filter(q => q.type !== 'basic')
+  return survey.value.questions.filter(q => q.questionType !== 'BASIC')
 })
 
 // 计算当前题目
@@ -91,12 +90,22 @@ const handleMultipleChoice = (questionId, optionIds) => {
 
 // 处理输入题答案
 const handleInputAnswer = (questionId, value) => {
-  answers.value[questionId] = value
+  // 处理事件对象的情况
+  if (value && typeof value === 'object' && 'target' in value) {
+    answers.value[questionId] = value.target.value
+  } else {
+    answers.value[questionId] = value
+  }
 }
 
 // 处理基础信息题答案
 const handleBasicInfoAnswer = (questionId, value) => {
-  answers.value[questionId] = value
+  // 处理事件对象的情况
+  if (value && typeof value === 'object' && 'target' in value) {
+    answers.value[questionId] = value.target.value
+  } else {
+    answers.value[questionId] = value
+  }
 }
 
 // 下一题
@@ -120,6 +129,11 @@ const startSurvey = () => {
   if (canStartSurvey.value) {
     showBasicInfo.value = false
     currentQuestionIndex.value = 0
+    // 开始倒计时
+    if (survey.value && survey.value.timeLimit && survey.value.timeLimit > 0) {
+      timeRemaining.value = survey.value.timeLimit * 60
+      startCountdown()
+    }
   } else {
     showToast('请完成所有基础信息题')
   }
@@ -133,14 +147,15 @@ const submitSurvey = async () => {
   }
   
   try {
-    showLoading('提交中...')
-    const response = await surveyApi.submitAnswer(surveyId.value, answers.value)
-    if (response.code === 200) {
-      showToast('提交成功！')
-      router.push(`/result/${surveyId.value}`)
-    } else {
-      showToast('提交失败，请重试')
-    }
+    showToast({
+      message: '提交中...',
+      forbidClick: true,
+      loading: true
+    })
+    await surveyApi.submitAnswer(surveyId.value, answers.value)
+    // 后端没有返回数据，直接视为成功
+    showToast('提交成功！')
+    router.push(`/result/${surveyId.value}`)
   } catch (error) {
     showToast('提交失败，请重试')
     console.error('提交答案失败:', error)
@@ -173,13 +188,17 @@ const formatTime = (seconds) => {
 onMounted(async () => {
   try {
     const response = await surveyApi.getSurveyDetail(surveyId.value)
-    if (response.code === 200) {
-      survey.value = response.data
-      timeRemaining.value = response.data.timeLimit * 60
-      startCountdown()
+    // 后端直接返回数据，没有 code 字段
+    if (response) {
+      survey.value = response
+      timeRemaining.value = response.timeLimit ? response.timeLimit * 60 : 0
       // 检查是否有基础信息题
       if (basicInfoQuestions.value.length === 0) {
         showBasicInfo.value = false
+        // 如果没有基础信息题，直接开始倒计时
+        if (response.timeLimit && response.timeLimit > 0) {
+          startCountdown()
+        }
       }
     } else {
       showToast('加载失败，请重试')
@@ -210,7 +229,7 @@ onUnmounted(() => {
       <div class="header-center">
         {{ showBasicInfo ? '基础信息' : '问卷答题' }}
       </div>
-      <div class="header-right">
+      <div class="header-right" v-if="!showBasicInfo && survey && survey.timeLimit && survey.timeLimit > 0">
         <van-count-down :time="timeRemaining * 1000" format="mm:ss" />
       </div>
     </div>
@@ -674,6 +693,15 @@ onUnmounted(() => {
 :deep(.van-checkbox__label) {
   font-size: var(--font-size-base);
   color: var(--text-primary);
+}
+
+/* 确保 checkbox 显示为方形 */
+:deep(.van-checkbox__icon .van-icon) {
+  border-radius: 0 !important;
+}
+
+:deep(.van-checkbox__icon--checked .van-icon) {
+  border-radius: 0 !important;
 }
 
 :deep(.van-field__control) {

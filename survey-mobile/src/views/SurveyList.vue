@@ -33,24 +33,22 @@ const filterSurveys = () => {
 
 // 进入问卷详情
 const goToSurvey = (survey) => {
-  if (survey.status === 'ongoing') {
+  if (survey.status === 'PUBLISHED') {
     router.push(`/survey/${survey.id}`)
-  } else if (survey.status === 'upcoming') {
-    showToast('问卷尚未开始')
-  } else if (survey.status === 'ended') {
-    showToast('问卷已结束')
+  } else if (survey.status === 'DRAFT') {
+    showToast('问卷尚未发布')
+  } else {
+    showToast('问卷不可用')
   }
 }
 
 // 获取问卷状态文本和样式
 const getStatusInfo = (status) => {
   switch (status) {
-    case 'ongoing':
+    case 'PUBLISHED':
       return { text: '进行中', type: 'success' }
-    case 'upcoming':
-      return { text: '未开始', type: 'warning' }
-    case 'ended':
-      return { text: '已结束', type: 'default' }
+    case 'DRAFT':
+      return { text: '未发布', type: 'warning' }
     default:
       return { text: '未知', type: 'default' }
   }
@@ -65,9 +63,14 @@ const formatTime = (time) => {
 onMounted(async () => {
   try {
     const response = await surveyApi.getSurveyList()
-    if (response.code === 200) {
-      surveys.value = response.data
-      filteredSurveys.value = [...response.data]
+    // 后端直接返回数据，没有 code 字段
+    if (Array.isArray(response)) {
+      // 确保每个问卷都有 questions 字段
+      surveys.value = response.map(survey => ({
+        ...survey,
+        questions: survey.questions || []
+      }))
+      filteredSurveys.value = [...surveys.value]
     }
   } catch (error) {
     showToast('加载失败，请重试')
@@ -100,7 +103,7 @@ onMounted(async () => {
             v-for="survey in filteredSurveys" 
             :key="survey.id"
             :title="survey.title"
-            :value="`${survey.questions}题 | ${formatTime(survey.startTime)}`"
+            :value="`${survey.questions ? survey.questions.length : 0}题 | ${formatTime(survey.startTime)}`"
             :label="`截止时间：${formatTime(survey.endTime)}`"
             @click="goToSurvey(survey)"
             class="survey-item"
@@ -111,7 +114,7 @@ onMounted(async () => {
                   :type="getStatusInfo(survey.status).type"
                   :text="getStatusInfo(survey.status).text"
                 />
-                <div v-if="survey.answered" class="answered-tag">已作答</div>
+                <div v-if="false" class="answered-tag">已作答</div>
               </div>
             </template>
           </van-cell>
