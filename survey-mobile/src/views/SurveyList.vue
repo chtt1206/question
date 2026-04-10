@@ -46,11 +46,11 @@ const goToSurvey = (survey) => {
 const getStatusInfo = (status) => {
   switch (status) {
     case 'PUBLISHED':
-      return { text: '进行中', type: 'success' }
+      return { text: '进行中', color: '#07c160' }
     case 'DRAFT':
-      return { text: '未发布', type: 'warning' }
+      return { text: '未发布', color: '#ee0a24' }
     default:
-      return { text: '未知', type: 'default' }
+      return { text: '未知', color: '#ff976a' }
   }
 }
 
@@ -102,19 +102,20 @@ onMounted(async () => {
           <van-cell 
             v-for="survey in filteredSurveys" 
             :key="survey.id"
-            :title="survey.title"
-            :value="`${survey.questionCount || (survey.questions || []).filter(q => q.questionType !== 'BASIC').length}题 | ${formatTime(survey.startTime)}`"
-            :label="`截止时间：${formatTime(survey.endTime)}`"
             @click="goToSurvey(survey)"
             class="survey-item"
           >
-            <template #right>
-              <div class="cell-extra">
-                <van-badge 
-                  :type="getStatusInfo(survey.status).type"
-                  :text="getStatusInfo(survey.status).text"
-                />
-                <div v-if="false" class="answered-tag">已作答</div>
+            <template #default>
+              <div class="survey-info">
+                <h3 class="survey-title">{{ survey.title }}</h3>
+                <p class="survey-meta">
+                  <span class="question-count">{{ survey.questionCount || (survey.questions || []).filter(q => q.questionType !== 'BASIC').length }}题</span>
+                  <span class="start-time">{{ formatTime(survey.startTime) }}</span>
+                </p>
+                <p class="survey-end-time">截止时间：{{ formatTime(survey.endTime) }}</p>
+                <div class="survey-status">
+                  <div :class="['status-tag', survey.status.toLowerCase()]">{{ getStatusInfo(survey.status).text }}</div>
+                </div>
               </div>
             </template>
           </van-cell>
@@ -139,14 +140,14 @@ onMounted(async () => {
 <style scoped>
 .survey-list {
   min-height: 100vh;
-  background-color: var(--background-color);
+  background-color: #f5f5f5;
   padding-bottom: var(--spacing-lg);
 }
 
 .search-container {
-  background-color: var(--card-background);
+  background-color: #ffffff;
   padding: var(--spacing-sm);
-  box-shadow: var(--shadow-sm);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   position: sticky;
   top: 0;
   z-index: 10;
@@ -154,7 +155,7 @@ onMounted(async () => {
 }
 
 .search-container.scrolled {
-  box-shadow: var(--shadow-md);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
 }
 
 .list-container {
@@ -166,35 +167,20 @@ onMounted(async () => {
   margin-bottom: var(--spacing-sm);
   border-radius: var(--radius-lg);
   overflow: hidden;
-  box-shadow: var(--shadow-sm);
-  transition: all var(--transition-normal);
-  background-color: var(--card-background);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+  background-color: #ffffff;
+  border: 1px solid #f0f0f0;
 }
 
 .survey-item:active {
   transform: scale(0.98);
-  box-shadow: var(--shadow-sm);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
 }
 
 .survey-item:hover {
-  box-shadow: var(--shadow-md);
-}
-
-.cell-extra {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: var(--spacing-xs);
-}
-
-.answered-tag {
-  background-color: var(--primary-light);
-  color: var(--primary-color);
-  font-size: var(--font-size-xs);
-  padding: 2px 8px;
-  border-radius: var(--radius-full);
-  text-align: center;
-  font-weight: 500;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  transform: translateY(-2px);
 }
 
 .loading-container {
@@ -230,33 +216,116 @@ onMounted(async () => {
 :deep(.van-search__content) {
   border-radius: var(--radius-full);
   background-color: #f5f5f5;
+  height: 40px;
+}
+
+:deep(.van-search__action) {
+  color: var(--primary-color);
+  font-size: var(--font-size-sm);
 }
 
 :deep(.van-cell) {
   border-radius: var(--radius-lg);
   overflow: hidden;
-}
-
-:deep(.van-cell__title) {
-  font-weight: 600;
-  color: var(--text-primary);
-  font-size: var(--font-size-base);
-}
-
-:deep(.van-cell__value) {
-  color: var(--text-secondary);
-  font-size: var(--font-size-sm);
-}
-
-:deep(.van-cell__label) {
-  color: var(--text-tertiary);
-  font-size: var(--font-size-xs);
-  margin-top: 4px;
+  padding: var(--spacing-md);
+  margin-bottom: var(--spacing-sm);
 }
 
 :deep(.van-empty__description) {
   color: var(--text-tertiary);
   font-size: var(--font-size-sm);
+}
+
+:deep(.van-empty__image) {
+  width: 120px;
+  height: 120px;
+}
+
+/* 问卷信息样式 */
+.survey-info {
+  position: relative;
+  width: 100%;
+  text-align: left;
+}
+
+.survey-title {
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: var(--font-size-base);
+  line-height: 1.4;
+  margin-bottom: var(--spacing-sm);
+  padding-right: 80px;
+}
+
+.survey-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-xs);
+}
+
+.question-count {
+  color: var(--primary-color);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  background-color: rgba(59, 130, 246, 0.1);
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+}
+
+.start-time {
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.survey-end-time {
+  color: var(--text-tertiary);
+  font-size: var(--font-size-xs);
+  margin-bottom: 0;
+}
+
+.survey-status {
+  position: absolute;
+  top: 0;
+  right: 0;
+}
+
+/* 状态标签样式 */
+.status-tag {
+  font-size: var(--font-size-xs);
+  padding: 4px 12px;
+  border-radius: var(--radius-full);
+  text-align: center;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.status-tag.published {
+  background-color: #e6f7ee;
+  color: #07c160;
+}
+
+.status-tag.draft {
+  background-color: #fff1f0;
+  color: #ee0a24;
+}
+
+.status-tag.unknown {
+  background-color: #fff7e6;
+  color: #ff976a;
+}
+
+/* 已作答标签 */
+.answered-badge {
+  background-color: #e6f7ff;
+  color: #1890ff;
+  font-size: var(--font-size-xs);
+  padding: 4px 12px;
+  border-radius: var(--radius-full);
+  text-align: center;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  margin-top: var(--spacing-xs);
 }
 
 /* 响应式调整 */
@@ -273,12 +342,39 @@ onMounted(async () => {
     margin-bottom: var(--spacing-xs);
   }
   
-  :deep(.van-cell__title) {
-    font-size: var(--font-size-sm);
+  :deep(.van-cell) {
+    padding: var(--spacing-sm);
   }
   
-  :deep(.van-cell__value) {
-    font-size: var(--font-size-xs);
+  .survey-title {
+    font-size: var(--font-size-sm);
+    padding-right: 70px;
+  }
+  
+  .survey-meta {
+    gap: var(--spacing-sm);
+  }
+  
+  .question-count {
+    font-size: 10px;
+    padding: 2px 6px;
+  }
+  
+  .start-time {
+    font-size: 10px;
+  }
+  
+  .survey-end-time {
+    font-size: 9px;
+  }
+  
+  .status-tag {
+    font-size: 10px;
+    padding: 3px 8px;
+  }
+  
+  :deep(.van-search__content) {
+    height: 36px;
   }
 }
 </style>
