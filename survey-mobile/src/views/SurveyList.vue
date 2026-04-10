@@ -140,22 +140,23 @@ onMounted(async () => {
 <style scoped>
 .survey-list {
   min-height: 100vh;
-  background-color: #f5f5f5;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
   padding-bottom: var(--spacing-lg);
 }
 
 .search-container {
-  background-color: #ffffff;
+  background-color: rgba(255, 255, 255, 0.95);
   padding: var(--spacing-sm);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
   position: sticky;
   top: 0;
   z-index: 10;
-  transition: box-shadow var(--transition-normal);
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
 }
 
 .search-container.scrolled {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
 }
 
 .list-container {
@@ -167,20 +168,33 @@ onMounted(async () => {
   margin-bottom: var(--spacing-sm);
   border-radius: var(--radius-lg);
   overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
   transition: all 0.3s ease;
   background-color: #ffffff;
   border: 1px solid #f0f0f0;
+  position: relative;
+  overflow: hidden;
+}
+
+.survey-item::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background: linear-gradient(180deg, var(--primary-color), #60a5fa);
+  border-radius: var(--radius-lg) 0 0 var(--radius-lg);
 }
 
 .survey-item:active {
   transform: scale(0.98);
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .survey-item:hover {
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
-  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+  transform: translateY(-3px);
 }
 
 .loading-container {
@@ -195,7 +209,7 @@ onMounted(async () => {
 .loading-spinner {
   width: 40px;
   height: 40px;
-  border: 3px solid #f3f3f3;
+  border: 3px solid rgba(59, 130, 246, 0.2);
   border-top: 3px solid var(--primary-color);
   border-radius: 50%;
   animation: spin 1s linear infinite;
@@ -205,6 +219,7 @@ onMounted(async () => {
 .loading-container p {
   color: var(--text-secondary);
   font-size: var(--font-size-sm);
+  font-weight: 500;
 }
 
 @keyframes spin {
@@ -217,11 +232,18 @@ onMounted(async () => {
   border-radius: var(--radius-full);
   background-color: #f5f5f5;
   height: 40px;
+  transition: all 0.3s ease;
+}
+
+:deep(.van-search__content):focus-within {
+  background-color: #ffffff;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
 }
 
 :deep(.van-search__action) {
   color: var(--primary-color);
   font-size: var(--font-size-sm);
+  font-weight: 500;
 }
 
 :deep(.van-cell) {
@@ -229,23 +251,30 @@ onMounted(async () => {
   overflow: hidden;
   padding: var(--spacing-md);
   margin-bottom: var(--spacing-sm);
+  background-color: transparent;
+}
+
+:deep(.van-empty) {
+  margin-top: var(--spacing-xl);
 }
 
 :deep(.van-empty__description) {
   color: var(--text-tertiary);
   font-size: var(--font-size-sm);
+  font-weight: 500;
 }
 
 :deep(.van-empty__image) {
   width: 120px;
   height: 120px;
+  opacity: 0.8;
 }
 
 /* 问卷信息样式 */
 .survey-info {
   position: relative;
   width: 100%;
-  text-align: left;
+  padding-left: var(--spacing-sm);
 }
 
 .survey-title {
@@ -255,6 +284,12 @@ onMounted(async () => {
   line-height: 1.4;
   margin-bottom: var(--spacing-sm);
   padding-right: 80px;
+  text-align: left;
+  transition: all 0.3s ease;
+}
+
+.survey-item:hover .survey-title {
+  color: var(--primary-color);
 }
 
 .survey-meta {
@@ -262,6 +297,7 @@ onMounted(async () => {
   align-items: center;
   gap: var(--spacing-md);
   margin-bottom: var(--spacing-xs);
+  flex-wrap: wrap;
 }
 
 .question-count {
@@ -269,25 +305,37 @@ onMounted(async () => {
   font-size: var(--font-size-sm);
   font-weight: 500;
   background-color: rgba(59, 130, 246, 0.1);
-  padding: 2px 8px;
+  padding: 4px 12px;
   border-radius: var(--radius-full);
+  transition: all 0.3s ease;
+}
+
+.survey-item:hover .question-count {
+  background-color: rgba(59, 130, 246, 0.2);
+  transform: scale(1.05);
 }
 
 .start-time {
   color: var(--text-secondary);
   font-size: var(--font-size-sm);
+  font-weight: 400;
 }
 
 .survey-end-time {
   color: var(--text-tertiary);
   font-size: var(--font-size-xs);
   margin-bottom: 0;
+  font-weight: 400;
 }
 
 .survey-status {
   position: absolute;
   top: 0;
   right: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--spacing-xs);
 }
 
 /* 状态标签样式 */
@@ -298,6 +346,7 @@ onMounted(async () => {
   text-align: center;
   font-weight: 500;
   transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 .status-tag.published {
@@ -315,6 +364,11 @@ onMounted(async () => {
   color: #ff976a;
 }
 
+.survey-item:hover .status-tag {
+  transform: scale(1.05);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
 /* 已作答标签 */
 .answered-badge {
   background-color: #e6f7ff;
@@ -326,10 +380,20 @@ onMounted(async () => {
   font-weight: 500;
   transition: all 0.3s ease;
   margin-top: var(--spacing-xs);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.survey-item:hover .answered-badge {
+  transform: scale(1.05);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 /* 响应式调整 */
 @media (max-width: 375px) {
+  .survey-list {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  }
+  
   .search-container {
     padding: var(--spacing-xs);
   }
@@ -346,6 +410,10 @@ onMounted(async () => {
     padding: var(--spacing-sm);
   }
   
+  .survey-info {
+    padding-left: var(--spacing-xs);
+  }
+  
   .survey-title {
     font-size: var(--font-size-sm);
     padding-right: 70px;
@@ -357,7 +425,7 @@ onMounted(async () => {
   
   .question-count {
     font-size: 10px;
-    padding: 2px 6px;
+    padding: 3px 8px;
   }
   
   .start-time {
@@ -375,6 +443,53 @@ onMounted(async () => {
   
   :deep(.van-search__content) {
     height: 36px;
+  }
+  
+  .survey-status {
+    gap: 2px;
+  }
+  
+  .answered-badge {
+    font-size: 10px;
+    padding: 3px 8px;
+    margin-top: 2px;
+  }
+}
+
+/* 加载动画增强 */
+@keyframes pulse {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.loading-container {
+  animation: pulse 2s infinite;
+}
+
+/* 列表项进入动画 */
+.survey-item {
+  animation: fadeInUp 0.5s ease forwards;
+  opacity: 0;
+  transform: translateY(20px);
+}
+
+.survey-item:nth-child(1) { animation-delay: 0.1s; }
+.survey-item:nth-child(2) { animation-delay: 0.2s; }
+.survey-item:nth-child(3) { animation-delay: 0.3s; }
+.survey-item:nth-child(4) { animation-delay: 0.4s; }
+.survey-item:nth-child(5) { animation-delay: 0.5s; }
+
+@keyframes fadeInUp {
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 </style>
