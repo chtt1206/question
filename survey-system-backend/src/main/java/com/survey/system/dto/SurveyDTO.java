@@ -15,5 +15,6 @@ public class SurveyDTO {
     private Integer passingScore;
     private String status;
     private List<QuestionDTO> questions;
+    private Integer questionCount;
     private String createdAt;
 }

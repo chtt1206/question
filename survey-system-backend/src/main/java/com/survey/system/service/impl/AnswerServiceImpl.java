@@ -39,9 +39,8 @@ public class AnswerServiceImpl implements AnswerService {
 
             // 使用MyBatis-Plus查询问卷的所有问题
             List<Question> questions = questionMapper.selectList(
-                new LambdaQueryWrapper<Question>()
-                    .eq(Question::getSurveyId, answerSubmitDTO.getSurveyId())
-            );
+                    new LambdaQueryWrapper<Question>()
+                            .eq(Question::getSurveyId, answerSubmitDTO.getSurveyId()));
 
             for (Question question : questions) {
                 // 跳过基础信息题
@@ -56,12 +55,12 @@ public class AnswerServiceImpl implements AnswerService {
                         if ("single".equals(question.getType()) || "multiple".equals(question.getType())) {
                             // 选择题
                             List<Option> options = optionMapper.selectList(
-                                new LambdaQueryWrapper<Option>()
-                                    .eq(Option::getQuestionId, question.getId())
-                            );
+                                    new LambdaQueryWrapper<Option>()
+                                            .eq(Option::getQuestionId, question.getId()));
                             boolean isCorrect = true;
                             for (Option option : options) {
-                                boolean selected = answerItem.getSelectedOptions() != null && answerItem.getSelectedOptions().contains(option.getId());
+                                boolean selected = answerItem.getSelectedOptions() != null
+                                        && answerItem.getSelectedOptions().contains(option.getId());
                                 if (option.getIsCorrect() != selected) {
                                     isCorrect = false;
                                     break;
@@ -73,7 +72,8 @@ public class AnswerServiceImpl implements AnswerService {
                             }
                         } else if ("input".equals(question.getType())) {
                             // 填空题
-                            if (question.getCorrectAnswer() != null && question.getCorrectAnswer().equals(answerItem.getTextAnswer())) {
+                            if (question.getCorrectAnswer() != null
+                                    && question.getCorrectAnswer().equals(answerItem.getTextAnswer())) {
                                 score += question.getScore();
                                 correctCount++;
                             }
@@ -106,27 +106,24 @@ public class AnswerServiceImpl implements AnswerService {
     @Override
     public List<AnswerRecord> getAnswersBySurveyId(Long surveyId) {
         return answerRecordMapper.selectList(
-            new LambdaQueryWrapper<AnswerRecord>()
-                .eq(AnswerRecord::getSurveyId, surveyId)
-        );
+                new LambdaQueryWrapper<AnswerRecord>()
+                        .eq(AnswerRecord::getSurveyId, surveyId));
     }
 
     @Override
     public Integer getAnswerCountBySurveyId(Long surveyId) {
         return Math.toIntExact(answerRecordMapper.selectCount(
-            new LambdaQueryWrapper<AnswerRecord>()
-                .eq(AnswerRecord::getSurveyId, surveyId)
-        ));
+                new LambdaQueryWrapper<AnswerRecord>()
+                        .eq(AnswerRecord::getSurveyId, surveyId)));
     }
 
     @Override
     public AnswerRecord getAnswerBySurveyIdAndUserId(Long surveyId, String userId) {
         return answerRecordMapper.selectOne(
-            new LambdaQueryWrapper<AnswerRecord>()
-                .eq(AnswerRecord::getSurveyId, surveyId)
-                .eq(AnswerRecord::getUserId, userId)
-                .orderByDesc(AnswerRecord::getSubmitTime)
-                .last("LIMIT 1")
-        );
+                new LambdaQueryWrapper<AnswerRecord>()
+                        .eq(AnswerRecord::getSurveyId, surveyId)
+                        .eq(AnswerRecord::getUserId, userId)
+                        .orderByDesc(AnswerRecord::getSubmitTime)
+                        .last("LIMIT 1"));
     }
 }

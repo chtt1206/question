@@ -10,7 +10,7 @@ public class AnswerSubmitDTO {
     private String userName;
     private Integer answerTime; // 答题时长（秒）
     private List<AnswerItemDTO> answers;
-    
+
     @Data
     public static class AnswerItemDTO {
         private Long questionId;

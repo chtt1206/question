@@ -38,7 +38,8 @@ const currentQuestion = computed(() => {
 // 计算进度
 const progress = computed(() => {
   if (!survey.value || showBasicInfo.value) return 0
-  return parseFloat(((currentQuestionIndex.value + 1) / surveyQuestions.value.length * 100).toFixed(2))
+  const questionCount = survey.value.questionCount || (survey.value.questions || []).filter(q => q.questionType !== 'BASIC').length
+  return parseFloat(((currentQuestionIndex.value + 1) / (questionCount || 1) * 100).toFixed(2))
 })
 
 // 计算是否可以提交
@@ -111,7 +112,9 @@ const handleBasicInfoAnswer = (questionId, value) => {
 
 // 下一题
 const nextQuestion = () => {
-  if (canNextQuestion.value && currentQuestionIndex.value < surveyQuestions.value.length - 1) {
+  if (!survey.value) return
+  const questionCount = survey.value.questionCount || (survey.value.questions || []).filter(q => q.questionType !== 'BASIC').length
+  if (canNextQuestion.value && currentQuestionIndex.value < questionCount - 1) {
     currentQuestionIndex.value++
   } else if (!canNextQuestion.value) {
     showToast('请完成当前题目')
@@ -297,7 +300,7 @@ onUnmounted(() => {
         <div class="progress-container">
           <van-progress :percentage="progress" :stroke-width="8" />
           <div class="progress-text">
-            {{ currentQuestionIndex + 1 }} / {{ surveyQuestions.length }}
+            {{ currentQuestionIndex + 1 }} / {{ survey ? (survey.questionCount || (survey.questions || []).filter(q => q.questionType !== 'BASIC').length) : 0 }}
           </div>
         </div>
 
@@ -365,7 +368,7 @@ onUnmounted(() => {
           </van-button>
           <van-button 
             @click="nextQuestion"
-            :disabled="currentQuestionIndex === surveyQuestions.length - 1 || !canNextQuestion"
+            :disabled="currentQuestionIndex === (survey ? (survey.questionCount || (survey.questions || []).filter(q => q.questionType !== 'BASIC').length) : 0) - 1 || !canNextQuestion"
             class="nav-button"
           >
             下一题

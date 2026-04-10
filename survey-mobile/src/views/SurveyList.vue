@@ -103,7 +103,7 @@ onMounted(async () => {
             v-for="survey in filteredSurveys" 
             :key="survey.id"
             :title="survey.title"
-            :value="`${survey.questions ? survey.questions.length : 0}题 | ${formatTime(survey.startTime)}`"
+            :value="`${survey.questionCount || (survey.questions || []).filter(q => q.questionType !== 'BASIC').length}题 | ${formatTime(survey.startTime)}`"
             :label="`截止时间：${formatTime(survey.endTime)}`"
             @click="goToSurvey(survey)"
             class="survey-item"

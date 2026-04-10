@@ -158,7 +158,11 @@ public class SurveyServiceImpl implements SurveyService {
 
         List<Question> questions = questionMapper.selectList(new LambdaQueryWrapper<Question>().eq(Question::getSurveyId, id));
         List<QuestionDTO> questionDTOs = new ArrayList<>();
+        int count = 0;
         for (Question question : questions) {
+            if (!"BASIC".equals(question.getQuestionType())) {
+                count++;
+            }
             QuestionDTO questionDTO = new QuestionDTO();
             BeanUtils.copyProperties(question, questionDTO);
 
@@ -173,6 +177,7 @@ public class SurveyServiceImpl implements SurveyService {
             questionDTOs.add(questionDTO);
         }
         surveyDTO.setQuestions(questionDTOs);
+        surveyDTO.setQuestionCount(count);
 
         return surveyDTO;
     }
@@ -197,6 +202,30 @@ public class SurveyServiceImpl implements SurveyService {
             if (survey.getCreatedAt() != null) {
                 surveyDTO.setCreatedAt(survey.getCreatedAt().format(formatter));
             }
+            
+            // 加载问题和选项
+            List<Question> questions = questionMapper.selectList(new LambdaQueryWrapper<Question>().eq(Question::getSurveyId, survey.getId()));
+            List<QuestionDTO> questionDTOs = new ArrayList<>();
+            int count = 0;
+            for (Question question : questions) {
+                if (!"BASIC".equals(question.getQuestionType())) {
+                    count++;
+                }
+                QuestionDTO questionDTO = new QuestionDTO();
+                BeanUtils.copyProperties(question, questionDTO);
+
+                List<Option> options = optionMapper.selectList(new LambdaQueryWrapper<Option>().eq(Option::getQuestionId, question.getId()));
+                List<OptionDTO> optionDTOs = new ArrayList<>();
+                for (Option option : options) {
+                    OptionDTO optionDTO = new OptionDTO();
+                    BeanUtils.copyProperties(option, optionDTO);
+                    optionDTOs.add(optionDTO);
+                }
+                questionDTO.setOptions(optionDTOs);
+                questionDTOs.add(questionDTO);
+            }
+            surveyDTO.setQuestions(questionDTOs);
+            surveyDTO.setQuestionCount(count);
             
             surveyDTOs.add(surveyDTO);
         }
