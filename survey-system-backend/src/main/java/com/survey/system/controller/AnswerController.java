@@ -28,4 +28,9 @@ public class AnswerController {
     public Integer getAnswerCountBySurveyId(@PathVariable Long surveyId) {
         return answerService.getAnswerCountBySurveyId(surveyId);
     }
+
+    @GetMapping("/result/{surveyId}/{userId}")
+    public AnswerRecord getAnswerResult(@PathVariable Long surveyId, @PathVariable String userId) {
+        return answerService.getAnswerBySurveyIdAndUserId(surveyId, userId);
+    }
 }

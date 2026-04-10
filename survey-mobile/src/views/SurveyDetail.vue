@@ -15,6 +15,7 @@ const answers = ref({})
 const timeRemaining = ref(30 * 60) // 30分钟
 const timer = ref(null)
 const showBasicInfo = ref(true) // 是否显示基础信息题
+const startTime = ref(null) // 开始答题时间
 
 // 计算基础信息题
 const basicInfoQuestions = computed(() => {
@@ -129,6 +130,8 @@ const startSurvey = () => {
   if (canStartSurvey.value) {
     showBasicInfo.value = false
     currentQuestionIndex.value = 0
+    // 记录开始答题时间
+    startTime.value = Date.now()
     // 开始倒计时
     if (survey.value && survey.value.timeLimit && survey.value.timeLimit > 0) {
       timeRemaining.value = survey.value.timeLimit * 60
@@ -145,15 +148,20 @@ const submitSurvey = async () => {
     showToast('请完成所有必答题')
     return
   }
-  
+
   try {
     showToast({
       message: '提交中...',
       forbidClick: true,
       loading: true
     })
-    await surveyApi.submitAnswer(surveyId.value, answers.value)
-    // 后端没有返回数据，直接视为成功
+    // 计算答题时长（分钟）
+    const answerTime = startTime.value ? Math.round((Date.now() - startTime.value) / 1000 / 60) : 0
+    const result = await surveyApi.submitAnswer(surveyId.value, answers.value, answerTime)
+    // 保存 userId 到本地存储
+    if (result && result.userId) {
+      localStorage.setItem('survey_user_id_' + surveyId.value, result.userId)
+    }
     showToast('提交成功！')
     router.push(`/result/${surveyId.value}`)
   } catch (error) {

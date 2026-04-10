@@ -44,17 +44,20 @@ export const surveyApi = {
   },
 
   // 提交答案
-  submitAnswer: (surveyId, answers) => {
+  submitAnswer: (surveyId, answers, answerTime = 0) => {
+    // 生成用户ID
+    const userId = 'user_' + Date.now()
     // 构建提交数据
     const submitData = {
       surveyId: parseInt(surveyId),
-      userId: 'user_' + Date.now(), // 临时用户ID
+      userId: userId,
       userName: answers[1] || '匿名用户', // 使用姓名作为userName
+      answerTime: answerTime, // 答题时长（分钟）
       answers: Object.entries(answers).map(([questionId, answer]) => {
         const item = {
           questionId: parseInt(questionId)
         }
-        
+
         // 根据题目类型处理答案
         if (typeof answer === 'string') {
           // 基础信息题或输入题
@@ -66,71 +69,80 @@ export const surveyApi = {
           // 单选题
           item.selectedOptions = [parseInt(answer)]
         }
-        
+
         return item
       })
     }
-    
-    return api.post('/answer', submitData)
+
+    return api.post('/answer', submitData).then(() => {
+      // 返回 userId 供后续使用
+      return { userId: userId }
+    })
   },
 
   // 获取答题结果
-  getAnswerResult: (surveyId) => {
-    // 模拟数据，实际项目中需要根据后端接口调整
-    return new Promise(resolve => {
-      setTimeout(() => {
-        resolve({
-          code: 200,
-          data: {
-            surveyId: parseInt(surveyId),
-            surveyTitle: '2024年员工安全培训考试',
-            score: 80,
-            totalScore: 100,
-            correctCount: 4,
-            totalQuestions: 5,
-            timeUsed: 15,
-            rank: 5,
-            totalParticipants: 120,
-            answers: [
-              {
-                questionId: 1,
-                questionText: '以下哪个是正确的手部卫生步骤？',
-                userAnswer: '使用肥皂搓洗至少20秒',
-                correctAnswer: '使用肥皂搓洗至少20秒',
-                isCorrect: true
-              },
-              {
-                questionId: 2,
-                questionText: '以下哪些属于火灾逃生的正确做法？',
-                userAnswer: '用湿毛巾捂住口鼻, 弯腰低姿前进',
-                correctAnswer: '用湿毛巾捂住口鼻, 弯腰低姿前进',
-                isCorrect: true
-              },
-              {
-                questionId: 3,
-                questionText: '电器着火时，应首先使用水基灭火器扑救。',
-                userAnswer: '错误',
-                correctAnswer: '错误',
-                isCorrect: true
-              },
-              {
-                questionId: 4,
-                questionText: '以下哪种灭火器适用于电器火灾？',
-                userAnswer: '干粉灭火器',
-                correctAnswer: '干粉灭火器',
-                isCorrect: true
-              },
-              {
-                questionId: 5,
-                questionText: '安全出口标志的颜色是？',
-                userAnswer: '红色',
-                correctAnswer: '绿色',
-                isCorrect: false
-              }
-            ]
+  getAnswerResult: (surveyId, userId) => {
+    return Promise.all([
+      api.get(`/answer/result/${surveyId}/${userId}`),
+      api.get(`/survey/${surveyId}`),
+      api.get(`/answer/survey/${surveyId}`)
+    ]).then(([record, survey, allRecords]) => {
+      if (record) {
+        // 计算总题数（不包含基础信息题）
+        const totalQuestions = survey.questions ? survey.questions.filter(q => q.questionType !== 'BASIC').length : 0
+        // 计算总分（所有非基础信息题的分数之和）
+        const totalScore = survey.questions ? survey.questions.filter(q => q.questionType !== 'BASIC').reduce((sum, q) => sum + (q.score || 0), 0) : 0
+        // 计算参与人数
+        const totalParticipants = allRecords ? allRecords.length : 0
+        // 计算排名（按得分降序，答对题数降序，答题时长升序）
+        let rank = 1
+        if (allRecords && allRecords.length > 0) {
+          allRecords.sort((a, b) => {
+            // 按得分降序
+            if (b.score !== a.score) {
+              return b.score - a.score
+            }
+            // 按答对题数降序
+            if (b.correctCount !== a.correctCount) {
+              return b.correctCount - a.correctCount
+            }
+            // 按答题时长升序
+            return (a.answerTime || 0) - (b.answerTime || 0)
+          })
+          // 找到当前用户的排名
+          for (let i = 0; i < allRecords.length; i++) {
+            if (allRecords[i].userId === userId) {
+              rank = i + 1
+              break
+            }
           }
-        })
-      }, 300)
+        }
+        // 构建结果数据结构
+        return {
+          surveyId: record.surveyId,
+          score: record.score,
+          totalScore: totalScore,
+          correctCount: record.correctCount,
+          totalQuestions: totalQuestions,
+          timeUsed: record.answerTime || 0,
+          rank: rank,
+          totalParticipants: totalParticipants,
+          answers: [] // 暂时返回空数组，实际项目中需要解析answers字段
+        }
+      } else {
+        // 如果没有答案记录，返回默认数据
+        return {
+          surveyId: parseInt(surveyId),
+          score: 0,
+          totalScore: 0,
+          correctCount: 0,
+          totalQuestions: 0,
+          timeUsed: 0,
+          rank: 0,
+          totalParticipants: 0,
+          answers: []
+        }
+      }
     })
   }
 }

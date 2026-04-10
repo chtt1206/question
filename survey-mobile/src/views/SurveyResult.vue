@@ -1,7 +1,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { Button, Empty, List, Cell, Badge, Toast } from 'vant'
+import { Button, Empty, List, Cell, Badge, showToast } from 'vant'
 import { surveyApi } from '../services/api'
 
 const router = useRouter()
@@ -14,14 +14,24 @@ const loading = ref(true)
 // 加载结果数据
 onMounted(async () => {
   try {
-    const response = await surveyApi.getAnswerResult(surveyId)
-    if (response.code === 200) {
-      result.value = response.data
+    // 从本地存储获取 userId
+    const userId = localStorage.getItem('survey_user_id_' + surveyId)
+    if (!userId) {
+      showToast('未找到答题记录')
+      loading.value = false
+      return
+    }
+    const response = await surveyApi.getAnswerResult(surveyId, userId)
+    // 后端直接返回数据，没有 code 字段
+    if (response) {
+      console.log('加载到的结果:', response)
+      
+      result.value = response
     } else {
-      Toast.info('加载失败，请重试')
+      showToast('加载失败，请重试')
     }
   } catch (error) {
-    Toast.info('加载失败，请重试')
+    showToast('加载失败，请重试')
     console.error('加载答题结果失败:', error)
   } finally {
     loading.value = false

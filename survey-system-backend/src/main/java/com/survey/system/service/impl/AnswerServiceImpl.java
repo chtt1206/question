@@ -33,7 +33,7 @@ public class AnswerServiceImpl implements AnswerService {
     @Transactional
     public void submitAnswer(AnswerSubmitDTO answerSubmitDTO) {
         try {
-            // 计算分数和正确题目数
+            // 计算分数和正确题目数（不包含基础信息题）
             double score = 0;
             int correctCount = 0;
 
@@ -42,8 +42,13 @@ public class AnswerServiceImpl implements AnswerService {
                 new LambdaQueryWrapper<Question>()
                     .eq(Question::getSurveyId, answerSubmitDTO.getSurveyId())
             );
-            
+
             for (Question question : questions) {
+                // 跳过基础信息题
+                if ("BASIC".equals(question.getQuestionType())) {
+                    continue;
+                }
+
                 // 查找对应的答案
                 for (AnswerSubmitDTO.AnswerItemDTO answerItem : answerSubmitDTO.getAnswers()) {
                     if (answerItem.getQuestionId().equals(question.getId())) {
@@ -86,7 +91,7 @@ public class AnswerServiceImpl implements AnswerService {
             answerRecord.setAnswers(objectMapper.writeValueAsString(answerSubmitDTO.getAnswers()));
             answerRecord.setScore(score);
             answerRecord.setCorrectCount(correctCount);
-            answerRecord.setAnswerTime(0); // 暂时设为0，可从前端传递
+            answerRecord.setAnswerTime(answerSubmitDTO.getAnswerTime() != null ? answerSubmitDTO.getAnswerTime() : 0);
             answerRecord.setSubmitTime(LocalDateTime.now());
             answerRecordMapper.insert(answerRecord);
         } catch (JsonProcessingException e) {
@@ -112,5 +117,16 @@ public class AnswerServiceImpl implements AnswerService {
             new LambdaQueryWrapper<AnswerRecord>()
                 .eq(AnswerRecord::getSurveyId, surveyId)
         ));
+    }
+
+    @Override
+    public AnswerRecord getAnswerBySurveyIdAndUserId(Long surveyId, String userId) {
+        return answerRecordMapper.selectOne(
+            new LambdaQueryWrapper<AnswerRecord>()
+                .eq(AnswerRecord::getSurveyId, surveyId)
+                .eq(AnswerRecord::getUserId, userId)
+                .orderByDesc(AnswerRecord::getSubmitTime)
+                .last("LIMIT 1")
+        );
     }
 }
