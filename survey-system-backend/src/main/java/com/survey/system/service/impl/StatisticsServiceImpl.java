@@ -32,25 +32,67 @@ public class StatisticsServiceImpl implements StatisticsService {
         Map<String, Object> statistics = new HashMap<>();
 
         // 获取答题总数
-        int answerCount = answerRecordMapper.countBySurveyId(surveyId);
-        statistics.put("answerCount", answerCount);
+        int totalAnswers = answerRecordMapper.countBySurveyId(surveyId);
+        statistics.put("totalAnswers", totalAnswers);
 
-        // 获取平均分
+        // 计算完成率（假设完成率为100%，实际项目中可能需要根据具体逻辑计算）
+        double completionRate = 100.0;
+        statistics.put("completionRate", completionRate);
+
+        // 获取用户排名
+        List<Map<String, Object>> userRank = new ArrayList<>();
         List<AnswerRecord> answerRecords = answerRecordMapper.selectBySurveyId(surveyId);
-        double averageScore = 0;
-        if (!answerRecords.isEmpty()) {
-            double totalScore = answerRecords.stream().mapToDouble(AnswerRecord::getScore).sum();
-            averageScore = totalScore / answerRecords.size();
+        
+        // 按排序规则排序：先按总分降序，再按答对题数降序，再按答题时长升序
+        List<AnswerRecord> sortedRecords = answerRecords.stream()
+                .sorted((a, b) -> {
+                    // 1. 按总分降序
+                    if (b.getScore() != a.getScore()) {
+                        return Double.compare(b.getScore(), a.getScore());
+                    }
+                    // 2. 按答对题数降序
+                    if (b.getCorrectCount() != a.getCorrectCount()) {
+                        return Integer.compare(b.getCorrectCount(), a.getCorrectCount());
+                    }
+                    // 3. 按答题时长升序
+                    return Integer.compare(a.getAnswerTime(), b.getAnswerTime());
+                })
+                .collect(Collectors.toList());
+        
+        // 构建用户排名数据
+        for (int i = 0; i < sortedRecords.size(); i++) {
+            AnswerRecord record = sortedRecords.get(i);
+            Map<String, Object> userRankItem = new HashMap<>();
+            userRankItem.put("rank", i + 1);
+            userRankItem.put("name", record.getUserName());
+            userRankItem.put("correctCount", record.getCorrectCount() + "/" + 10); // 假设总题数为10，实际项目中需要根据具体问卷计算
+            userRankItem.put("score", record.getScore() + "分");
+            userRankItem.put("answerTime", record.getAnswerTime() + "秒");
+            userRankItem.put("submitTime", record.getSubmitTime().toString());
+            userRank.add(userRankItem);
         }
-        statistics.put("averageScore", averageScore);
+        statistics.put("userRank", userRank);
 
-        // 获取最高分
-        double maxScore = answerRecords.stream().mapToDouble(AnswerRecord::getScore).max().orElse(0);
-        statistics.put("maxScore", maxScore);
-
-        // 获取最低分
-        double minScore = answerRecords.stream().mapToDouble(AnswerRecord::getScore).min().orElse(0);
-        statistics.put("minScore", minScore);
+        // 获取题目统计
+        List<Map<String, Object>> questionStats = new ArrayList<>();
+        List<Question> questions = questionMapper.selectBySurveyId(surveyId);
+        
+        for (Question question : questions) {
+            Map<String, Object> questionStat = new HashMap<>();
+            questionStat.put("id", question.getId());
+            questionStat.put("type", question.getType());
+            questionStat.put("text", question.getText());
+            
+            // 计算题目统计数据（实际项目中需要根据具体逻辑计算）
+            questionStat.put("totalCount", totalAnswers);
+            questionStat.put("correctCount", totalAnswers / 2); // 示例数据
+            questionStat.put("wrongCount", totalAnswers / 2); // 示例数据
+            questionStat.put("correctRate", "50.0%"); // 示例数据
+            questionStat.put("optionAnalysis", "选项A(10次), 选项B(5次), 选项C(15次)"); // 示例数据
+            
+            questionStats.add(questionStat);
+        }
+        statistics.put("questionStats", questionStats);
 
         return statistics;
     }

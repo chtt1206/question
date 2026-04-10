@@ -80,3 +80,18 @@ export const answerApi = {
     return response.data;
   }
 };
+
+export const statisticsApi = {
+  getSurveyStatistics: async (surveyId) => {
+    const response = await apiClient.get(`/statistics/survey/${surveyId}`);
+    return response.data;
+  },
+  getQuestionStatistics: async (questionId) => {
+    const response = await apiClient.get(`/statistics/question/${questionId}`);
+    return response.data;
+  },
+  getUserRanking: async (surveyId) => {
+    const response = await apiClient.get(`/statistics/ranking/${surveyId}`);
+    return response.data;
+  }
+};

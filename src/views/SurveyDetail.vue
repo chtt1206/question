@@ -92,48 +92,6 @@ const settings = reactive({
   passingScore: null
 });
 
-// 统计数据
-const statistics = {
-  userRank: [
-    { rank: 1, name: '张明', correctCount: '3/3', score: '6分', submitTime: '2026-04-07 14:23' },
-    { rank: 2, name: '李芳', correctCount: '2/3', score: '4分', submitTime: '2026-04-07 13:15' },
-    { rank: 3, name: '王强', correctCount: '2/3', score: '3.5分', submitTime: '2026-04-06 09:47' },
-    { rank: 4, name: '赵敏', correctCount: '1/3', score: '2分', submitTime: '2026-04-05 20:12' }
-  ],
-  questionStats: [
-    {
-      id: 1,
-      type: '单选题',
-      text: '手部卫生步骤',
-      totalCount: 32,
-      correctCount: 26,
-      wrongCount: 6,
-      correctRate: '81.2%',
-      optionAnalysis: 'A(3人) B(26人 ✅) C(3人)'
-    },
-    {
-      id: 2,
-      type: '多选题',
-      text: '火灾逃生',
-      totalCount: 32,
-      correctCount: 18,
-      partialCorrect: 10,
-      wrongCount: 4,
-      optionAnalysis: '选项A(28次), 选项B(5次), 选项C(24次), 选项D(2次)'
-    },
-    {
-      id: 3,
-      type: '判断题',
-      text: '电器灭火',
-      totalCount: 32,
-      correctCount: 24,
-      wrongCount: 8,
-      correctRate: '75%',
-      optionAnalysis: '正确(8人) ❌ 错误(24人) ✅'
-    }
-  ]
-};
-
 // 预览模态框
 const showPreview = ref(false);
 
@@ -154,9 +112,6 @@ const previewAnswers = reactive({
 
 // 预览步骤
 const previewStep = ref('basic'); // basic 或 questions
-
-// 统计选项卡
-const activeTab = ref('userRank');
 
 // 顶部标签页
 const topTab = ref('basic');
@@ -231,42 +186,7 @@ watch(() => route.params.id, () => {
 });
 
 
-// 表格列定义
-const columns = [
-  {
-    title: '排名',
-    dataIndex: 'rank',
-    key: 'rank',
-    render: (rank) => {
-      return rank === 1 ? '🥇 1' : rank === 2 ? '🥈 2' : rank === 3 ? '🥉 3' : rank;
-    }
-  },
-  {
-    title: '用户昵称',
-    dataIndex: 'name',
-    key: 'name'
-  },
-  {
-    title: '答对题数',
-    dataIndex: 'correctCount',
-    key: 'correctCount'
-  },
-  {
-    title: '总分',
-    dataIndex: 'score',
-    key: 'score'
-  },
-  {
-    title: '答题时长',
-    dataIndex: 'answerTime',
-    key: 'answerTime'
-  },
-  {
-    title: '提交时间',
-    dataIndex: 'submitTime',
-    key: 'submitTime'
-  }
-];
+
 
 // 添加题目相关
 const showAddQuestionModal = ref(false);
@@ -661,10 +581,7 @@ const publishSurvey = async () => {
   }
 };
 
-// 导出数据
-const exportData = () => {
-  alert('📎 导出数据：支持下载《答题明细.xlsx》《用户排名.xlsx》《题目统计.xlsx》\n满足按题目(总共答题人数/答对/答错/选项分析)需求。');
-};
+
 
 // 保存设置
 const saveSettings = async () => {
@@ -1278,49 +1195,7 @@ const removeOption = (index) => {
         </a-tabs>
       </div>
 
-      <!-- 答题统计模块 -->
-      <div style="margin-top: 40px; border-top: 2px solid #eef2ff; padding-top: 24px;">
-        <h2 style="font-size: 20px; margin-bottom: 8px;">📊 答题统计面板</h2>
-        <div class="stats-container">
-          <a-tabs v-model:activeKey="activeTab">
-            <a-tab-pane key="userRank" tab="👥 按用户答对题数排序">
-              <!-- 用户排行榜表格 -->
-              <a-table :columns="columns" :data-source="statistics.userRank" row-key="rank" />
-            </a-tab-pane>
-            <a-tab-pane key="questionStats" tab="📋 按题目统计 (正确/错误/选项分析)">
-              <!-- 按题目统计面板 -->
-              <div style="margin-bottom: 20px;">
-                <div 
-                  v-for="item in statistics.questionStats" 
-                  :key="item.id"
-                  style="background:#f1f5f9; border-radius: 20px; padding: 18px; margin-bottom: 16px;"
-                >
-                  <h4>📌 题目{{ item.id }} ({{ item.type }}) - {{ item.text }}</h4>
-                  <p v-if="item.correctRate">
-                    📊 总共答题人数: {{ item.totalCount }}人 &nbsp;| 
-                    ✅ 答对数量: {{ item.correctCount }}人 &nbsp;| 
-                    ❌ 答错数量: {{ item.wrongCount }}人 &nbsp;| 
-                    正确率: {{ item.correctRate }}
-                  </p>
-                  <p v-else>
-                    📊 总共答题人数: {{ item.totalCount }}人 | 
-                    ✅ 全对数量: {{ item.correctCount }}人 | 
-                    部分正确: {{ item.partialCorrect }}人 | 
-                    全错: {{ item.wrongCount }}人
-                  </p>
-                  <p>📈 选项分析: {{ item.optionAnalysis }}</p>
-                </div>
-              </div>
-            </a-tab-pane>
-          </a-tabs>
-          
-          <!-- 导出按钮 -->
-          <div class="export-btn">
-            <a-button type="primary" @click="exportData">📎 导出数据 (Excel / CSV)</a-button>
-            <span style="margin-left: 12px; font-size:12px; align-self:center;">支持导出明细/排名/题目统计</span>
-          </div>
-        </div>
-      </div>
+
     </div>
 
     <!-- 预览弹窗 -->
