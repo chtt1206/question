@@ -613,7 +613,7 @@ onUnmounted(() => {
 
 .question-text {
   font-size: var(--font-size-lg);
-  font-weight: 500;
+  font-weight: 700;
   margin-bottom: var(--spacing-lg);
   line-height: 1.6;
   color: var(--text-primary);
@@ -664,6 +664,8 @@ onUnmounted(() => {
   gap: var(--spacing-sm);
   margin-top: var(--spacing-lg);
   padding-bottom: var(--spacing-lg);
+  align-items: center;
+  justify-content: space-between;
 }
 
 .nav-button {
@@ -674,16 +676,18 @@ onUnmounted(() => {
   font-size: var(--font-size-base);
   font-weight: 500;
   transition: all var(--transition-normal);
+  min-width: 80px;
 }
 
 .submit-button {
-  flex: 1;
+  flex: 1.2;
   height: 48px;
   border-radius: var(--radius-md);
   touch-action: manipulation;
   font-size: var(--font-size-base);
   font-weight: 500;
   transition: all var(--transition-normal);
+  min-width: 100px;
 }
 
 /* 自定义Vant组件样式 */
@@ -795,12 +799,25 @@ onUnmounted(() => {
   }
   
   .navigation-buttons {
-    flex-direction: column;
+    flex-direction: row;
     gap: var(--spacing-xs);
+    flex-wrap: nowrap;
   }
   
-  .nav-button,
-  .submit-button,
+  .nav-button {
+    flex: 1;
+    height: 44px;
+    font-size: var(--font-size-sm);
+    min-width: 70px;
+  }
+  
+  .submit-button {
+    flex: 1.2;
+    height: 44px;
+    font-size: var(--font-size-sm);
+    min-width: 90px;
+  }
+  
   .start-button {
     width: 100%;
     height: 44px;

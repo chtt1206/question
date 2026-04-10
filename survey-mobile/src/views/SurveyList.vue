@@ -42,15 +42,24 @@ const goToSurvey = (survey) => {
   }
 }
 
-// 获取问卷状态文本和样式
-const getStatusInfo = (status) => {
-  switch (status) {
-    case 'PUBLISHED':
+// 获取状态信息
+const getStatusInfo = (status, startTime, endTime) => {
+  if (status === 'DRAFT') {
+    return { text: '未发布', color: '#ee0a24' }
+  } else if (status === 'PUBLISHED') {
+    const now = new Date().getTime()
+    const start = new Date(startTime).getTime()
+    const end = new Date(endTime).getTime()
+    
+    if (now < start) {
+      return { text: '未开始', color: '#ff976a' }
+    } else if (now >= start && now <= end) {
       return { text: '进行中', color: '#07c160' }
-    case 'DRAFT':
-      return { text: '未发布', color: '#ee0a24' }
-    default:
-      return { text: '未知', color: '#ff976a' }
+    } else {
+      return { text: '已结束', color: '#999999' }
+    }
+  } else {
+    return { text: '未知', color: '#ff976a' }
   }
 }
 
@@ -114,7 +123,7 @@ onMounted(async () => {
                 </p>
                 <p class="survey-end-time">截止时间：{{ formatTime(survey.endTime) }}</p>
                 <div class="survey-status">
-                  <div :class="['status-tag', survey.status.toLowerCase()]">{{ getStatusInfo(survey.status).text }}</div>
+                  <div :class="['status-tag', getStatusInfo(survey.status, survey.startTime, survey.endTime).text.toLowerCase().replace(/\s+/g, '-')]">{{ getStatusInfo(survey.status, survey.startTime, survey.endTime).text }}</div>
                 </div>
               </div>
             </template>
@@ -349,19 +358,29 @@ onMounted(async () => {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
-.status-tag.published {
-  background-color: #e6f7ee;
-  color: #07c160;
-}
-
-.status-tag.draft {
+.status-tag.未发布 {
   background-color: #fff1f0;
   color: #ee0a24;
 }
 
-.status-tag.unknown {
+.status-tag.未开始 {
   background-color: #fff7e6;
   color: #ff976a;
+}
+
+.status-tag.进行中 {
+  background-color: #e6f7ee;
+  color: #07c160;
+}
+
+.status-tag.已结束 {
+  background-color: #f5f5f5;
+  color: #999999;
+}
+
+.status-tag.未知 {
+  background-color: #f5f5f5;
+  color: #999999;
 }
 
 .survey-item:hover .status-tag {
