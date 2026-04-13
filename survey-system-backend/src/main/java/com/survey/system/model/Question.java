@@ -21,6 +21,7 @@ public class Question {
     private Double score;
     private String questionType; // BASIC, QUESTION
     private Integer sortOrder;
+    private String answerExplanation; // 答案解析
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

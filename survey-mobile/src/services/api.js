@@ -2,7 +2,7 @@ import axios from 'axios'
 
 // 创建axios实例
 const api = axios.create({
-  baseURL: 'http://localhost:8081/api', // 后端API地址
+  baseURL: 'http://localhost:8082/api', // 后端API地址
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json'
@@ -133,7 +133,7 @@ export const surveyApi = {
               let userAnswer = '';
               let questionText = question ? question.text : `问题 ${index + 1}`;
               let isCorrect = false;
-              
+
               // 处理用户答案
               if (answerItem.textAnswer) {
                 userAnswer = answerItem.textAnswer;
@@ -145,7 +145,7 @@ export const surveyApi = {
                   }).join(', ');
                 }
               }
-              
+
               // 处理正确答案
               let correctAnswer = '';
               if (question) {
@@ -166,20 +166,21 @@ export const surveyApi = {
                   correctAnswer = question.correctAnswer || '';
                 }
               }
-              
+
               return {
                 questionId: answerItem.questionId,
                 questionText: questionText,
                 userAnswer: userAnswer,
                 correctAnswer: correctAnswer,
-                isCorrect: isCorrect
+                isCorrect: isCorrect,
+                answerExplanation: question?.answerExplanation || '' // 答案解析
               };
             }).filter(item => item !== null); // 过滤掉null值
           }
         } catch (error) {
           console.error('解析答题详情失败:', error);
         }
-        
+
         // 构建结果数据结构
         return {
           surveyId: record.surveyId,

@@ -25,7 +25,7 @@ onMounted(async () => {
     // 后端直接返回数据，没有 code 字段
     if (response) {
       console.log('加载到的结果:', response)
-      
+
       result.value = response
     } else {
       showToast('加载失败，请重试')
@@ -108,7 +108,7 @@ const reTakeSurvey = () => {
             <template #title>
               <div class="question-title">
                 <span class="question-text">第{{ index + 1 }}题：{{ answer.questionText }}</span>
-                <span 
+                <span
                   :class="['status-tag', answer.isCorrect ? 'correct' : 'wrong']"
                 >
                   {{ answer.isCorrect ? '正确' : '错误' }}
@@ -123,6 +123,9 @@ const reTakeSurvey = () => {
                 <p v-if="!answer.isCorrect && answer.correctAnswer" class="correct-answer">
                   正确答案：{{ answer.correctAnswer }}
                 </p>
+                <p v-if="!answer.isCorrect && answer.answerExplanation" class="answer-explanation">
+                  💡 答案解析：{{ answer.answerExplanation }}
+                </p>
               </div>
             </template>
           </van-cell>
@@ -132,13 +135,13 @@ const reTakeSurvey = () => {
 
       <!-- 操作按钮 -->
       <div class="action-buttons">
-        <van-button 
+        <van-button
           @click="goBackToList"
           class="action-button"
         >
           返回问卷列表
         </van-button>
-        <van-button 
+        <van-button
           type="primary"
           @click="reTakeSurvey"
           class="action-button"
@@ -363,12 +366,16 @@ const reTakeSurvey = () => {
 }
 
 .answer-item {
-  border-bottom: 1px solid var(--border-color);
-  padding: var(--spacing-md) 0;
+  padding: var(--spacing-md) 16px;
   transition: all var(--transition-normal);
   border-left: 4px solid transparent;
 }
-
+.answer-item:first-child {
+    border-top: none;
+  }
+  .van-cell:after{
+    display: none;
+  }
 .answer-item:hover {
   background-color: #f9f9f9;
   border-left-color: var(--primary-light);
@@ -399,6 +406,17 @@ const reTakeSurvey = () => {
   color: var(--success-color);
   font-weight: 500;
   line-height: 1.3;
+}
+
+.answer-explanation {
+  font-size: var(--font-size-sm);
+  color: var(--primary-color);
+  font-weight: 500;
+  line-height: 1.4;
+  margin-top: var(--spacing-sm);
+  padding: var(--spacing-sm);
+  background-color: var(--primary-light);
+  border-radius: var(--radius-sm);
 }
 
 .question-title {
@@ -524,21 +542,21 @@ const reTakeSurvey = () => {
   .result-content {
     padding: var(--spacing-md);
   }
-  
+
   .result-overview {
     padding: var(--spacing-lg) var(--spacing-md);
     margin-bottom: var(--spacing-md);
   }
-  
+
   .answer-details {
     padding: var(--spacing-md);
     margin-bottom: var(--spacing-md);
   }
-  
+
   .stat-value {
     font-size: var(--font-size-lg);
   }
-  
+
   .result-icon {
     width: 80px;
     height: 80px;
@@ -551,66 +569,72 @@ const reTakeSurvey = () => {
     padding: var(--spacing-sm);
     font-size: var(--font-size-sm);
   }
-  
+
   .header-center {
     font-size: var(--font-size-base);
   }
-  
+
   .result-content {
     padding: var(--spacing-sm);
   }
-  
+
   .result-overview {
     padding: var(--spacing-md) var(--spacing-sm);
     margin-bottom: var(--spacing-sm);
   }
-  
+
   .answer-details {
     padding: var(--spacing-sm);
     margin-bottom: var(--spacing-sm);
   }
-  
+
   .action-buttons {
     gap: var(--spacing-xs);
   }
-  
+
   .action-button {
     height: 44px;
     font-size: var(--font-size-sm);
   }
-  
+
   .result-stats {
     margin-top: var(--spacing-md);
     padding-top: var(--spacing-md);
   }
-  
+
   .stat-value {
     font-size: var(--font-size-base);
   }
-  
+
   .stat-label {
     font-size: var(--font-size-xs);
   }
-  
+
   .section-title {
     font-size: var(--font-size-base);
     margin-bottom: var(--spacing-sm);
   }
-  
+
   .answer-item {
-    padding: var(--spacing-sm) 0;
+    border-top:1px solid var(--van-cell-border-color);
+    padding: var(--spacing-sm) 16px;
   }
-  
+  .answer-item:first-child {
+    border-top: none;
+  }
+  .van-cell:after{
+    display: none;
+  }
   .result-icon {
     width: 70px;
     height: 70px;
     font-size: 36px;
   }
-  
+
   .result-title {
     font-size: var(--font-size-xl);
   }
-  
+
   .result-description {
     font-size: var(--font-size-sm);
   }

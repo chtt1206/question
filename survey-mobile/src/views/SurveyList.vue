@@ -34,7 +34,17 @@ const filterSurveys = () => {
 // 进入问卷详情
 const goToSurvey = (survey) => {
   if (survey.status === 'PUBLISHED') {
-    router.push(`/survey/${survey.id}`)
+    const now = new Date().getTime()
+    const start = new Date(survey.startTime).getTime()
+    const end = new Date(survey.endTime).getTime()
+    
+    if (now < start) {
+      showToast('问卷尚未开始')
+    } else if (now > end) {
+      showToast('问卷已结束')
+    } else {
+      router.push(`/survey/${survey.id}`)
+    }
   } else if (survey.status === 'DRAFT') {
     showToast('问卷尚未发布')
   } else {

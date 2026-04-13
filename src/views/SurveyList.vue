@@ -46,7 +46,7 @@
       </a-table>
     </a-card>
     <a-modal
-      v-model:visible="deleteModalVisible"
+      v-model:open="deleteModalVisible"
       title="删除确认"
       @ok="handleDeleteConfirm"
       @cancel="deleteModalVisible = false"
@@ -54,7 +54,7 @@
       <p>确定要删除该问卷吗？此操作不可恢复。</p>
     </a-modal>
     <a-modal
-      v-model:visible="publishModalVisible"
+      v-model:open="publishModalVisible"
       title="发布确认"
       @ok="handlePublishConfirm"
       @cancel="publishModalVisible = false"
@@ -62,7 +62,7 @@
       <p>确定要发布该问卷吗？发布后问卷将对外可见。</p>
     </a-modal>
     <a-modal
-      v-model:visible="unpublishModalVisible"
+      v-model:open="unpublishModalVisible"
       title="取消发布确认"
       @ok="handleUnpublishConfirm"
       @cancel="unpublishModalVisible = false"
@@ -70,7 +70,7 @@
       <p>确定要取消发布该问卷吗？取消发布后问卷将不再对外可见。</p>
     </a-modal>
     <a-modal
-      v-model:visible="statisticsModalVisible"
+      v-model:open="statisticsModalVisible"
       title="📊 答题统计"
       width="800px"
       @cancel="statisticsModalVisible = false"
@@ -79,37 +79,53 @@
         <a-spin tip="加载统计数据..." />
       </div>
       <div v-else>
-        <div class="mb-4">
-          <a-statistic title="总回答数" :value="statistics.totalAnswers" />
-          <a-statistic title="完成率" :value="statistics.completionRate" suffix="%" style="margin-left: 32px" />
+        <div class="statistics-summary">
+          <div class="statistics-item">
+            <a-statistic title="总回答数" :value="statistics.totalAnswers" />
+          </div>
+          <div class="statistics-item">
+            <a-statistic title="完成率" :value="statistics.completionRate" suffix="%" :precision="2" />
+          </div>
         </div>
         <a-tabs v-model:activeKey="activeTab">
           <a-tab-pane key="userRank" tab="👥 按用户答对题数排序">
             <!-- 用户排行榜表格 -->
-            <a-table :columns="userRankColumns" :data-source="statistics.userRank" row-key="rank" />
+            <a-table :columns="userRankColumns" :pagination="false" :data-source="statistics.userRank" row-key="rank" />
+            <!-- 分页组件 -->
+            <div style="margin-top: 16px; text-align: right;">
+              <a-pagination
+                v-model:current="currentPage"
+                v-model:page-size="pageSize"
+                :total="total"
+                @change="handlePageChange"
+                show-size-changer
+                :page-size-options="['10', '20', '50', '100']"
+                show-quick-jumper
+                :show-total="(total) => `共 ${total} 条`"
+              />
+            </div>
           </a-tab-pane>
           <a-tab-pane key="questionStats" tab="📋 按题目统计 (正确/错误/选项分析)">
             <!-- 按题目统计面板 -->
             <div style="margin-bottom: 20px;">
               <div 
-                v-for="item in statistics.questionStats" 
+                v-for="(item, index) in statistics.questionStats" 
                 :key="item.id"
                 style="background:#f1f5f9; border-radius: 20px; padding: 18px; margin-bottom: 16px;"
               >
-                <h4>📌 题目{{ item.id }} ({{ item.type }}) - {{ item.text }}</h4>
+                <h4>📌 题目{{ index + 1 }} ({{ item.type }}) - {{ item.text }}</h4>
                 <p v-if="item.correctRate">
-                  📊 总共答题人数: {{ item.totalCount }}人 &nbsp;| 
-                  ✅ 答对数量: {{ item.correctCount }}人 &nbsp;| 
-                  ❌ 答错数量: {{ item.wrongCount }}人 &nbsp;| 
+                  📊 总共答题人数: {{ item.totalCount }}人 &nbsp;|
+                  ✅ 答对数量: {{ item.correctCount }}人 &nbsp;|
+                  ❌ 答错数量: {{ item.wrongCount }}人 &nbsp;|
                   正确率: {{ item.correctRate }}
                 </p>
                 <p v-else>
-                  📊 总共答题人数: {{ item.totalCount }}人 | 
-                  ✅ 全对数量: {{ item.correctCount }}人 | 
-                  部分正确: {{ item.partialCorrect }}人 | 
+                  📊 总共答题人数: {{ item.totalCount }}人 |
+                  ✅ 全对数量: {{ item.correctCount }}人 |
+                  部分正确: {{ item.partialCorrect }}人 |
                   全错: {{ item.wrongCount }}人
                 </p>
-                <p>📈 选项分析: {{ item.optionAnalysis }}</p>
               </div>
             </div>
           </a-tab-pane>
@@ -151,6 +167,11 @@ const statistics = ref({
   userRank: [],
   questionStats: []
 });
+
+// 分页相关变量
+const currentPage = ref(1);
+const pageSize = ref(10);
+const total = ref(0);
 
 const columns = [
   {
@@ -246,45 +267,54 @@ const handleAnswers = (record) => {
 const handleStatistics = async (record) => {
   currentSurveyId.value = record.id;
   statisticsModalVisible.value = true;
-  await fetchStatistics(record.id);
+  // 重置分页参数
+  currentPage.value = 1;
+  pageSize.value = 10;
+  await fetchStatistics(record.id, currentPage.value, pageSize.value);
 };
 
-const fetchStatistics = async (surveyId) => {
+const fetchStatistics = async (surveyId, page = 1, pageSizeVal = 10) => {
   loadingStatistics.value = true;
   try {
-    const data = await statisticsApi.getSurveyStatistics(surveyId);
+    console.log('开始获取统计数据，问卷ID:', surveyId, '页码:', page, '每页大小:', pageSizeVal);
+    const data = await statisticsApi.getSurveyStatistics(surveyId, page, pageSizeVal);
+    console.log('获取到的统计数据:', data);
+    
     // 确保数据结构完整
-    let userRank = data.userRank || [];
+    let userRank = data.userRank || data.ranking || [];
     
-    // 按排序规则排序：先按总分降序，再按答对题数降序，再按答题时长升序
-    userRank.sort((a, b) => {
-      // 1. 按总分降序
-      const scoreA = parseFloat(a.score) || 0;
-      const scoreB = parseFloat(b.score) || 0;
-      if (scoreA !== scoreB) {
-        return scoreB - scoreA;
-      }
-      
-      // 2. 按答对题数降序
-      const correctCountA = parseInt(a.correctCount?.split('/')[0]) || 0;
-      const correctCountB = parseInt(b.correctCount?.split('/')[0]) || 0;
-      if (correctCountA !== correctCountB) {
-        return correctCountB - correctCountA;
-      }
-      
-      // 3. 按答题时长升序
-      const answerTimeA = parseInt(a.answerTime) || 0;
-      const answerTimeB = parseInt(b.answerTime) || 0;
-      return answerTimeA - answerTimeB;
-    });
+    // 处理不同格式的数据
+    if (userRank.length > 0 && typeof userRank[0] === 'object' && userRank[0].userName !== undefined) {
+      // 处理不同格式的数据，保留后端返回的排名
+      userRank = userRank.map((record) => ({
+        rank: record.rank,
+        name: record.userName || `用户${record.rank || 1}`,
+        correctCount: record.correctCount || '0/0',
+        score: record.score || '0分',
+        answerTime: record.answerTime || '0秒',
+        submitTime: record.submitTime || new Date().toISOString()
+      }));
+    }
+    console.log('后端返回的排名数据:', userRank);
+    console.log('后端返回的题目统计数据:', data.questionStats);
     
+    // 更新统计数据
     statistics.value = {
-      totalAnswers: data.totalAnswers || 0,
+      totalAnswers: data.totalAnswers || data.answerCount || 0,
       completionRate: data.completionRate || 0,
       userRank: userRank,
       questionStats: data.questionStats || []
     };
+    console.log('处理后的题目统计数据:', statistics.value.questionStats);
+    
+    // 更新分页数据
+    total.value = data.total || 0;
+    currentPage.value = data.page || 1;
+    pageSize.value = data.pageSize || 10;
+    
+    console.log('处理后的统计数据:', statistics.value);
   } catch (error) {
+    console.error('获取统计数据失败:', error);
     message.error('获取统计数据失败');
     // 设置默认值
     statistics.value = {
@@ -293,6 +323,9 @@ const fetchStatistics = async (surveyId) => {
       userRank: [],
       questionStats: []
     };
+    total.value = 0;
+    currentPage.value = 1;
+    pageSize.value = 10;
   } finally {
     loadingStatistics.value = false;
   }
@@ -300,6 +333,13 @@ const fetchStatistics = async (surveyId) => {
 
 const exportData = () => {
   alert('📎 导出数据：支持下载《答题明细.xlsx》《用户排名.xlsx》《题目统计.xlsx》\n满足按题目(总共答题人数/答对/答错/选项分析)需求。');
+};
+
+const handlePageChange = async (page, pageSizeVal) => {
+  console.log('分页变化，页码:', page, '每页大小:', pageSizeVal);
+  if (currentSurveyId.value) {
+    await fetchStatistics(currentSurveyId.value, page, pageSizeVal);
+  }
 };
 
 const showPublishConfirm = (record) => {
@@ -358,5 +398,36 @@ onMounted(() => {
 <style scoped>
 .survey-list {
   padding: 24px;
+}
+.statistics-summary {
+  display: flex;
+  gap: 48px;
+  padding: 20px 24px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 12px;
+  margin-bottom: 24px;
+}
+.statistics-item {
+  flex: 1;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+.statistics-item :deep(.ant-statistic-title) {
+  color: #666;
+  font-size: 14px;
+}
+.statistics-item :deep(.ant-statistic-content) {
+  color: #333;
+  font-weight: 600;
+}
+.statistics-item :deep(.ant-statistic-content-value) {
+  font-size: 28px;
+  color: #667eea;
+}
+.statistics-item :deep(.ant-statistic-content-suffix) {
+  font-size: 18px;
+  color: #667eea;
 }
 </style>

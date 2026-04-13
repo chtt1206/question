@@ -151,6 +151,7 @@ const initSurveyData = async () => {
           // 仅在问卷题目标签页添加分值和正确答案
           if (q.questionType === 'QUESTION') {
             question.score = q.score || 0;
+            question.answerExplanation = q.answerExplanation || ''; // 答案解析
             if (q.type === 'multiple') {
               question.correctOptions = q.correctOptions || [];
             } else if (q.type === 'input') {
@@ -197,12 +198,14 @@ const newQuestion = reactive({
   options: [
     { text: '', isCorrect: false },
     { text: '', isCorrect: false },
+    { text: '', isCorrect: false },
     { text: '', isCorrect: false }
   ],
   correctOption: 0,
   correctOptions: [],
   correctAnswer: '',
-  score: 0
+  score: 0,
+  answerExplanation: '' // 答案解析
 });
 
 // 监听新题目类型变化
@@ -300,6 +303,7 @@ const addQuestion = () => {
   newQuestion.correctOptions = [];
   newQuestion.correctAnswer = '';
   newQuestion.score = 0;
+  newQuestion.answerExplanation = ''; // 重置答案解析
   // 初始化内部字段
   newQuestion._correctOption = newQuestion.correctOption;
   newQuestion._correctOptions = newQuestion.correctOptions;
@@ -422,6 +426,7 @@ const saveDraft = async () => {
           correctOptions: q.correctOptions,
           correctAnswer: q.correctAnswer,
           score: q.score,
+          answerExplanation: q.answerExplanation, // 答案解析
           questionType: 'QUESTION'
         }))
       ]
@@ -555,6 +560,7 @@ const publishSurvey = async () => {
           correctOptions: q.correctOptions,
           correctAnswer: q.correctAnswer,
           score: q.score,
+          answerExplanation: q.answerExplanation, // 答案解析
           questionType: 'QUESTION'
         }))
       ]
@@ -794,9 +800,10 @@ const saveNewQuestion = () => {
     required: newQuestion.required
   };
   
-  // 仅在问卷题目标签页添加分值
+  // 仅在问卷题目标签页添加分值和答案解析
   if (topTab.value !== 'basic') {
     questionToAdd.score = newQuestion.score;
+    questionToAdd.answerExplanation = newQuestion.answerExplanation;
   }
   
   // 仅在问卷题目标签页添加正确答案字段和监听器
@@ -1153,6 +1160,18 @@ const removeOption = (index) => {
                   <span>分值: <a-input-number v-model:value="question.score" :step="1" class="score-input" size="small" /> 分</span>
                   <span v-if="question.type === 'multiple'" style="color:#6c757d; font-size:12px;">全对得分</span>
                 </div>
+                <!-- 答案解析 -->
+                <div style="margin-top: 12px; padding-top: 12px; border-top: 1px dashed #e9edf2;">
+                  <div style="display: flex; align-items: flex-start; gap: 8px;">
+                    <span style="font-weight: 600; color: #2563eb; font-size: 13px; white-space: nowrap;">💡 答案解析:</span>
+                    <a-textarea 
+                      v-model:value="question.answerExplanation" 
+                      placeholder="请输入答案解析（可选）" 
+                      :rows="2"
+                      style="flex: 1; font-size: 13px;"
+                    />
+                  </div>
+                </div>
               </div>
 
               <!-- 添加题目按钮 -->
@@ -1421,6 +1440,17 @@ const removeOption = (index) => {
           style="width: 100px;"
         ></a-input-number>
         <span style="margin-left: 8px; color: #64748b;">分</span>
+      </div>
+      
+      <!-- 答案解析设置 -->
+      <div v-if="topTab !== 'basic'" style="margin-bottom: 20px;">
+        <label style="display: block; font-weight: 600; margin-bottom: 8px;">💡 答案解析</label>
+        <a-textarea 
+          v-model:value="newQuestion.answerExplanation" 
+          placeholder="请输入答案解析（可选）"
+          :rows="3"
+          style="width: 100%;"
+        />
       </div>
       
       <template #footer>

@@ -16,6 +16,6 @@ mybatis-plus:
   type-aliases-package: com.survey.system.model
 
 server:
-  port: 8081
+  port: 8082
   servlet:
     context-path: /api

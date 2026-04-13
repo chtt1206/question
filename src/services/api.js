@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const apiClient = axios.create({
-  baseURL: 'http://localhost:8081/api',
+  baseURL: 'http://localhost:8082/api',
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json'
@@ -82,8 +82,10 @@ export const answerApi = {
 };
 
 export const statisticsApi = {
-  getSurveyStatistics: async (surveyId) => {
-    const response = await apiClient.get(`/statistics/survey/${surveyId}`);
+  getSurveyStatistics: async (surveyId, page = 1, pageSize = 10) => {
+    const response = await apiClient.get(`/statistics/survey/${surveyId}`, {
+      params: { page, pageSize }
+    });
     return response.data;
   },
   getQuestionStatistics: async (questionId) => {

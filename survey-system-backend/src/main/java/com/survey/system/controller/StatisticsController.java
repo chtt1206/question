@@ -13,7 +13,14 @@ public class StatisticsController {
     private StatisticsService statisticsService;
 
     @GetMapping("/survey/{surveyId}")
-    public Map<String, Object> getSurveyStatistics(@PathVariable Long surveyId) {
+    public Map<String, Object> getSurveyStatistics(@PathVariable Long surveyId, 
+                                                 @RequestParam(value = "page", defaultValue = "1") int page, 
+                                                 @RequestParam(value = "pageSize", defaultValue = "10") int pageSize) {
+        return statisticsService.getSurveyStatisticsWithPagination(surveyId, page, pageSize);
+    }
+
+    @GetMapping("/survey/{surveyId}/all")
+    public Map<String, Object> getSurveyStatisticsAll(@PathVariable Long surveyId) {
         return statisticsService.getSurveyStatistics(surveyId);
     }
 

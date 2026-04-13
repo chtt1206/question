@@ -16,5 +16,6 @@ public class QuestionDTO {
     private Double score;
     private String questionType;
     private Integer sortOrder;
+    private String answerExplanation; // 答案解析
     private List<OptionDTO> options;
 }

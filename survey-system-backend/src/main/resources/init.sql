@@ -31,6 +31,7 @@ CREATE TABLE IF NOT EXISTS question (
     score DOUBLE DEFAULT 0,
     question_type VARCHAR(20) DEFAULT 'QUESTION',
     sort_order INT DEFAULT 0,
+    answer_explanation TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (survey_id) REFERENCES survey(id) ON DELETE CASCADE
@@ -79,3 +80,6 @@ CREATE INDEX idx_question_survey_id ON question(survey_id);
 CREATE INDEX idx_survey_option_question_id ON survey_option(question_id);
 CREATE INDEX idx_answer_record_survey_id ON answer_record(survey_id);
 CREATE INDEX idx_question_statistics_question_id ON question_statistics(question_id);
+
+-- 添加答案解析字段到问题表（用于已存在的数据库）
+-- ALTER TABLE question ADD COLUMN answer_explanation TEXT;
