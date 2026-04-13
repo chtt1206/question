@@ -1,7 +1,7 @@
 <template>
   <div class="survey-list">
     <a-card title="问卷列表" class="mb-4">
-      <a-button type="primary" @click="handleAdd" class="mb-4">
+      <a-button type="primary" @click="handleAdd">
         <template #icon>
           <plus-outlined />
         </template>
@@ -38,6 +38,11 @@
             <a-button type="link" danger @click="showDeleteConfirm(record)">
               删除
             </a-button>
+          </template>
+          <template v-else-if="column.key === 'status'">
+            <span :class="['status-badge', record.status.toLowerCase()]">
+              {{ record.status === 'DRAFT' ? '草稿' : '已发布' }}
+            </span>
           </template>
           <template v-else-if="column.key === 'createdAt'">
             {{ record.createdAt || 'N/A' }}
@@ -183,9 +188,6 @@ const columns = [
     title: '状态',
     dataIndex: 'status',
     key: 'status',
-    customRender: (text) => {
-      return text === 'DRAFT' ? '草稿' : '已发布';
-    },
   },
   {
     title: '创建时间',
@@ -429,5 +431,50 @@ onMounted(() => {
 .statistics-item :deep(.ant-statistic-content-suffix) {
   font-size: 18px;
   color: #667eea;
+}
+
+/* 状态标签样式 */
+.status-badge {
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+  border: 1px solid transparent;
+}
+
+.status-badge.draft {
+  background-color: #f5f5f5;
+  color: #666;
+  border-color: #d9d9d9;
+}
+
+.status-badge.published {
+  background-color: #e6f7ff;
+  color: #1890ff;
+  border-color: #91d5ff;
+}
+
+.status-badge:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12);
+}
+
+/* 新建问卷按钮样式 */
+:deep(.ant-btn-primary) {
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 8px;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+:deep(.ant-btn-primary:hover) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
 }
 </style>

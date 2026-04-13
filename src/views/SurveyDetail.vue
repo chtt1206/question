@@ -1554,7 +1554,7 @@ body {
   background: #fefce8;
   border-left: 5px solid #eab308;
   padding: 16px 24px;
-  margin: 0 28px 20px;
+  margin: 20px 28px 20px;
   border-radius: 20px;
   box-shadow: 0 1px 2px rgba(0,0,0,0.03);
 }
