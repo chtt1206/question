@@ -27,6 +27,7 @@ onMounted(async () => {
       console.log('加载到的结果:', response)
 
       result.value = response
+      console.log('result.value:', result.value)
     } else {
       showToast('加载失败，请重试')
     }
@@ -145,6 +146,7 @@ const reTakeSurvey = () => {
           返回问卷列表
         </van-button>
         <van-button
+          v-if="result.allowRepeat"
           type="primary"
           @click="reTakeSurvey"
           class="action-button"

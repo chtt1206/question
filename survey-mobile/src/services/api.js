@@ -216,6 +216,7 @@ export const surveyApi = {
           rank: rank,
           totalParticipants: totalParticipants,
           passingScore: survey.passingScore || 0, // 默认60分
+          allowRepeat: survey.allowRepeat || false, // 是否允许重复答题
           answers: answers
         }
       } else {
