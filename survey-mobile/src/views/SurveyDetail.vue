@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { Button, RadioGroup, Radio, CheckboxGroup, Checkbox, Field, Progress, CountDown, showToast } from 'vant'
+import { Button, RadioGroup, Radio, CheckboxGroup, Checkbox, Field, showToast } from 'vant'
 import { surveyApi } from '../services/api'
 
 const router = useRouter()
@@ -86,28 +86,26 @@ const handleSingleChoice = (questionId, optionId) => {
 }
 
 // 处理多选题答案
-const handleMultipleChoice = (questionId, optionIds) => {
-  answers.value[questionId] = optionIds
+const handleMultipleChoice = (questionId, optionId) => {
+  if (!answers.value[questionId]) {
+    answers.value[questionId] = []
+  }
+  const index = answers.value[questionId].indexOf(optionId)
+  if (index === -1) {
+    answers.value[questionId].push(optionId)
+  } else {
+    answers.value[questionId].splice(index, 1)
+  }
 }
 
 // 处理输入题答案
-const handleInputAnswer = (questionId, value) => {
-  // 处理事件对象的情况
-  if (value && typeof value === 'object' && 'target' in value) {
-    answers.value[questionId] = value.target.value
-  } else {
-    answers.value[questionId] = value
-  }
+const handleInputAnswer = (questionId, e) => {
+  answers.value[questionId] = e.target.value
 }
 
 // 处理基础信息题答案
-const handleBasicInfoAnswer = (questionId, value) => {
-  // 处理事件对象的情况
-  if (value && typeof value === 'object' && 'target' in value) {
-    answers.value[questionId] = value.target.value
-  } else {
-    answers.value[questionId] = value
-  }
+const handleBasicInfoAnswer = (questionId, e) => {
+  answers.value[questionId] = e.target.value
 }
 
 // 下一题
@@ -232,18 +230,6 @@ onUnmounted(() => {
 
 <template>
   <div class="survey-detail">
-    <!-- 顶部导航栏 -->
-    <div class="header">
-      <div class="header-left" @click="router.back()">
-        ← 返回
-      </div>
-      <div class="header-center">
-        {{ showBasicInfo ? '基础信息' : '问卷答题' }}
-      </div>
-      <div class="header-right" v-if="!showBasicInfo && survey && survey.timeLimit && survey.timeLimit > 0">
-        <van-count-down :time="timeRemaining * 1000" format="mm:ss" />
-      </div>
-    </div>
 
     <!-- 加载状态 -->
     <div v-if="loading" class="loading-container">
@@ -253,15 +239,15 @@ onUnmounted(() => {
 
     <!-- 问卷内容 -->
     <div v-else-if="survey" class="survey-content">
-      <!-- 问卷标题 -->
-      <div class="survey-header">
-        <h1 class="survey-title">{{ survey.title }}</h1>
-        <p class="survey-description">{{ survey.description }}</p>
-      </div>
-
       <!-- 基础信息题区域 -->
       <div v-if="showBasicInfo" class="basic-info-container">
-        <h2 class="section-title">基础信息</h2>
+        <div class="survey-header">
+          <div class="survey-title">{{ survey.title }}</div>
+          <div class="survey-meta">
+            <span>基础信息填写</span>
+            <span>⏱️ 预计1分钟</span>
+          </div>
+        </div>
         <div class="basic-info-form">
           <div 
             v-for="question in basicInfoQuestions" 
@@ -270,117 +256,118 @@ onUnmounted(() => {
           >
             <div class="basic-info-label">
               {{ question.text }}
-              <span v-if="question.required" class="required-mark">*</span>
+              <span v-if="question.required" class="required-badge">*</span>
             </div>
-            <van-field
+            <textarea 
               v-model="answers[question.id]"
-              :placeholder="question.placeholder"
-              @change="(value) => handleBasicInfoAnswer(question.id, value)"
-              class="basic-info-input"
-            />
+              :placeholder="question.placeholder || '请输入'"
+              @input="(e) => handleBasicInfoAnswer(question.id, e)"
+              class="text-input"
+              rows="3"
+            ></textarea>
           </div>
         </div>
 
         <!-- 进入问卷答题按钮 -->
         <div class="start-survey-button">
-          <van-button 
-            type="primary"
+          <button 
             @click="startSurvey"
             :disabled="!canStartSurvey"
-            class="start-button"
+            :class="['btn', 'btn-primary', { 'btn-disabled': !canStartSurvey }]"
           >
             去问卷答题
-          </van-button>
+          </button>
         </div>
       </div>
 
       <!-- 问卷答题区域 -->
       <div v-else class="survey-questions-container">
-        <!-- 进度条 -->
-        <div class="progress-container">
-          <van-progress :percentage="progress" :stroke-width="8" />
-          <div class="progress-text">
-            {{ currentQuestionIndex + 1 }} / {{ survey ? (survey.questionCount || (survey.questions || []).filter(q => q.questionType !== 'BASIC').length) : 0 }}
+        <!-- 问卷头部 -->
+        <div class="survey-header">
+          <div class="survey-title">{{ survey.title }}</div>
+          <div class="survey-meta">
+            <span>第 {{ currentQuestionIndex + 1 }} / {{ survey ? (survey.questionCount || (survey.questions || []).filter(q => q.questionType !== 'BASIC').length) : 0 }} 题</span>
+            <span>⏱️ 预计2分钟</span>
+          </div>
+          <div class="progress-section">
+            <div class="progress-bar-container">
+              <div class="progress-fill" :style="{ width: progress + '%' }"></div>
+            </div>
+            <div class="progress-text">已完成 {{ Math.round(progress) }}%</div>
           </div>
         </div>
 
         <!-- 题目区域 -->
-        <div class="question-container">
-          <div class="question-header">
-            <span class="question-number">第 {{ currentQuestionIndex + 1 }} 题</span>
-            <span v-if="currentQuestion.required" class="required-mark">*</span>
-          </div>
-          <h3 class="question-text">{{ currentQuestion.text }}</h3>
+        <div class="question-area">
+          <div class="question-card">
+            <div class="question-text">
+              {{ currentQuestion.text }}
+              <span v-if="currentQuestion.required" class="required-badge">*</span>
+            </div>
 
-          <!-- 选项区域 -->
-          <div class="options-container">
-            <!-- 单选题 -->
-            <van-radio-group
-              v-if="currentQuestion.type === 'single'"
-              v-model="answers[currentQuestion.id]"
-              @change="(value) => handleSingleChoice(currentQuestion.id, value)"
-            >
-              <van-radio 
-                v-for="option in currentQuestion.options" 
-                :key="option.id" 
-                :name="option.id"
-                class="option-item"
+            <!-- 选项区域 -->
+            <div class="options-container">
+              <!-- 单选题 -->
+              <div 
+                v-if="currentQuestion.type === 'single'"
+                class="options-group"
               >
-                {{ option.text }}
-              </van-radio>
-            </van-radio-group>
+                <div 
+                  v-for="option in currentQuestion.options" 
+                  :key="option.id"
+                  :class="['option-item', { 'active': answers[currentQuestion.id] === option.id }]"
+                  @click="handleSingleChoice(currentQuestion.id, option.id)"
+                >
+                  <div class="radio-custom"></div>
+                  <div class="option-label">{{ option.text }}</div>
+                </div>
+              </div>
 
-            <!-- 多选题 -->
-            <van-checkbox-group
-              v-else-if="currentQuestion.type === 'multiple'"
-              v-model="answers[currentQuestion.id]"
-              @change="(value) => handleMultipleChoice(currentQuestion.id, value)"
-            >
-              <van-checkbox 
-                v-for="option in currentQuestion.options" 
-                :key="option.id" 
-                :name="option.id"
-                class="option-item"
+              <!-- 多选题 -->
+              <div 
+                v-else-if="currentQuestion.type === 'multiple'"
+                class="options-group"
               >
-                {{ option.text }}
-              </van-checkbox>
-            </van-checkbox-group>
+                <div 
+                  v-for="option in currentQuestion.options" 
+                  :key="option.id"
+                  :class="['option-item', { 'active': answers[currentQuestion.id] && answers[currentQuestion.id].includes(option.id) }]"
+                  @click="handleMultipleChoice(currentQuestion.id, option.id)"
+                >
+                  <div class="checkbox-custom"></div>
+                  <div class="option-label">{{ option.text }}</div>
+                </div>
+              </div>
 
-            <!-- 输入题 -->
-            <van-field
-              v-else-if="currentQuestion.type === 'input'"
-              v-model="answers[currentQuestion.id]"
-              placeholder="请输入答案"
-              @change="(value) => handleInputAnswer(currentQuestion.id, value)"
-              class="input-answer"
-            />
+              <!-- 输入题 -->
+              <textarea
+                v-else-if="currentQuestion.type === 'input'"
+                v-model="answers[currentQuestion.id]"
+                placeholder="请输入答案"
+                @input="(e) => handleInputAnswer(currentQuestion.id, e)"
+                class="text-input"
+                rows="3"
+              ></textarea>
+            </div>
           </div>
         </div>
 
         <!-- 导航按钮 -->
-        <div class="navigation-buttons">
-          <van-button 
+        <div class="footer-buttons">
+          <button 
             @click="prevQuestion"
             :disabled="currentQuestionIndex === 0"
-            class="nav-button"
+            :class="['btn', 'btn-secondary', { 'btn-disabled': currentQuestionIndex === 0 }]"
           >
             上一题
-          </van-button>
-          <van-button 
-            @click="nextQuestion"
-            :disabled="currentQuestionIndex === (survey ? (survey.questionCount || (survey.questions || []).filter(q => q.questionType !== 'BASIC').length) : 0) - 1 || !canNextQuestion"
-            class="nav-button"
+          </button>
+          <button 
+            @click="currentQuestionIndex === (survey ? (survey.questionCount || (survey.questions || []).filter(q => q.questionType !== 'BASIC').length) : 0) - 1 ? submitSurvey() : nextQuestion()"
+            :disabled="!canNextQuestion"
+            :class="['btn', 'btn-primary', { 'btn-disabled': !canNextQuestion }]"
           >
-            下一题
-          </van-button>
-          <van-button 
-            type="primary"
-            @click="submitSurvey"
-            :disabled="!canSubmit"
-            class="submit-button"
-          >
-            提交
-          </van-button>
+            {{ currentQuestionIndex === (survey ? (survey.questionCount || (survey.questions || []).filter(q => q.questionType !== 'BASIC').length) : 0) - 1 ? '提交问卷' : '下一题' }}
+          </button>
         </div>
       </div>
     </div>
@@ -390,55 +377,18 @@ onUnmounted(() => {
 <style scoped>
 .survey-detail {
   min-height: 100vh;
-  background-color: var(--background-color);
-}
-
-.header {
+  background-color: #F5F7FB;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background-color: var(--primary-color);
-  color: white;
-  padding: var(--spacing-md);
-  font-size: var(--font-size-base);
-  font-weight: 600;
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  box-shadow: var(--shadow-md);
-  transition: all var(--transition-normal);
+  flex-direction: column;
 }
 
-.header.scrolled {
-  box-shadow: var(--shadow-lg);
-}
-
-.header-left {
-  cursor: pointer;
-  padding: var(--spacing-xs) var(--spacing-sm);
-  border-radius: var(--radius-md);
-  transition: background-color var(--transition-fast);
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-xs);
-}
-
-.header-left:active {
-  background-color: rgba(255, 255, 255, 0.2);
-}
-
-.header-center {
-  flex: 1;
-  text-align: center;
-  font-size: var(--font-size-lg);
-}
 
 .loading-container {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: var(--spacing-2xl) 0;
+  padding: 40px 0;
   min-height: 60vh;
 }
 
@@ -446,15 +396,17 @@ onUnmounted(() => {
   width: 40px;
   height: 40px;
   border: 4px solid #f3f3f3;
-  border-top: 4px solid var(--primary-color);
+  border-top: 4px solid #1A73E8;
   border-radius: 50%;
   animation: spin 1s linear infinite;
-  margin-bottom: var(--spacing-md);
+  margin-bottom: 16px;
 }
 
 .loading-container p {
-  color: var(--text-secondary);
-  font-size: var(--font-size-sm);
+  color: #6C7A8E;
+  font-size: 14px;
+  font-weight: 500;
+  margin: 0;
 }
 
 @keyframes spin {
@@ -463,385 +415,357 @@ onUnmounted(() => {
 }
 
 .survey-content {
-  padding: var(--spacing-lg);
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
+/* 问卷头部 */
 .survey-header {
-  margin-bottom: var(--spacing-xl);
-  text-align: center;
+  padding: 12px 20px 8px 20px;
+  background: white;
+  border-bottom: 1px solid #EFF2F6;
 }
 
 .survey-title {
-  font-size: var(--font-size-2xl);
-  font-weight: 600;
-  margin-bottom: var(--spacing-sm);
-  color: var(--text-primary);
-  line-height: 1.3;
-  padding: 0 var(--spacing-md);
+  font-size: 20px;
+  font-weight: 700;
+  color: #0B2B4A;
+  margin-bottom: 4px;
 }
 
-.survey-description {
-  font-size: var(--font-size-sm);
-  color: var(--text-secondary);
-  line-height: 1.5;
-  padding: 0 var(--spacing-lg);
+.survey-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  color: #6C7A8E;
+  margin-top: 6px;
+}
+
+/* 进度条 */
+.progress-section {
+  margin-top: 12px;
+  margin-bottom: 4px;
+}
+
+.progress-bar-container {
+  background-color: #EDF0F4;
+  border-radius: 12px;
+  height: 6px;
+  width: 100%;
+  overflow: hidden;
+}
+
+.progress-fill {
+  background-color: #1A73E8;
+  height: 100%;
+  width: 0%;
+  border-radius: 12px;
+  transition: width 0.3s ease;
+}
+
+.progress-text {
+  font-size: 12px;
+  color: #5C6A7E;
+  margin-top: 6px;
+  text-align: right;
 }
 
 /* 基础信息题样式 */
 .basic-info-container {
-  background-color: var(--card-background);
-  border-radius: var(--radius-lg);
-  padding: var(--spacing-lg);
-  box-shadow: var(--shadow-sm);
-  margin-bottom: var(--spacing-xl);
-}
-
-.section-title {
-  font-size: var(--font-size-xl);
-  font-weight: 600;
-  margin-bottom: var(--spacing-lg);
-  color: var(--text-primary);
-  text-align: center;
-  padding-bottom: var(--spacing-md);
-  border-bottom: 1px solid var(--border-color);
+  flex: 1;
+  padding: 20px;
+  background: white;
 }
 
 .basic-info-form {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-lg);
+  gap: 20px;
+  margin-top: 20px;
 }
 
 .basic-info-item {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-sm);
+  gap: 8px;
 }
 
 .basic-info-label {
-  font-size: var(--font-size-base);
+  font-size: 16px;
   font-weight: 500;
-  color: var(--text-primary);
+  color: #1F2A3E;
 }
 
-.basic-info-input {
+/* 题目区域 */
+.question-area {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 20px 16px 20px;
+  scroll-behavior: smooth;
+}
+
+.question-area::-webkit-scrollbar {
+  width: 4px;
+}
+
+.question-area::-webkit-scrollbar-track {
+  background: #F0F2F5;
+}
+
+.question-area::-webkit-scrollbar-thumb {
+  background: #C1C9D2;
+  border-radius: 4px;
+}
+
+/* 题目卡片 */
+.question-card {
+  background: #FFFFFF;
+  border-radius: 24px;
+  padding: 20px;
+  margin-bottom: 24px;
+  animation: fadeSlideUp 0.3s ease;
+}
+
+@keyframes fadeSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.question-text {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1F2A3E;
+  line-height: 1.4;
+  margin-bottom: 20px;
+  padding-right: 8px;
+}
+
+.required-badge {
+  color: #E54545;
+  font-size: 16px;
+  margin-left: 4px;
+}
+
+/* 选项样式 */
+.options-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.options-group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.option-item {
+  display: flex;
+  align-items: center;
+  padding: 14px 16px;
+  background-color: #F8F9FC;
+  border-radius: 16px;
+  border: 1px solid #EDF0F4;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+
+.option-item.active {
+  background-color: #E9F4FF;
+  border-color: #1A73E8;
+}
+
+.radio-custom, .checkbox-custom {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid #C5CED9;
+  margin-right: 14px;
+  position: relative;
+  background: white;
+  transition: all 0.1s;
+  flex-shrink: 0;
+}
+
+.checkbox-custom {
+  border-radius: 6px;
+}
+
+.option-item.active .radio-custom {
+  border-color: #1A73E8;
+  background-color: #1A73E8;
+  box-shadow: inset 0 0 0 4px white;
+}
+
+.option-item.active .checkbox-custom {
+  border-color: #1A73E8;
+  background-color: #1A73E8;
+  position: relative;
+}
+
+.option-item.active .checkbox-custom::after {
+  content: "✓";
+  color: white;
+  font-size: 14px;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-weight: bold;
+}
+
+.option-label {
+  font-size: 16px;
+  color: #1F2A3E;
+  line-height: 1.3;
+  flex: 1;
+}
+
+/* 文本输入框 */
+.text-input {
   width: 100%;
-  padding: var(--spacing-md);
-  border: 2px solid var(--border-color);
-  border-radius: var(--radius-md);
-  font-size: var(--font-size-base);
-  touch-action: manipulation;
-  transition: all var(--transition-normal);
-}
-
-.basic-info-input:focus {
+  padding: 14px 16px;
+  font-size: 16px;
+  font-family: inherit;
+  border: 1px solid #E2E8F0;
+  border-radius: 16px;
+  background-color: #F8F9FC;
+  transition: all 0.2s;
+  resize: vertical;
   outline: none;
-  border-color: var(--primary-color);
-  box-shadow: 0 0 0 3px var(--primary-light);
 }
 
+.text-input:focus {
+  border-color: #1A73E8;
+  background-color: white;
+  box-shadow: 0 0 0 3px rgba(26,115,232,0.1);
+}
+
+/* 按钮样式 */
 .start-survey-button {
-  margin-top: var(--spacing-xl);
+  margin-top: 32px;
   display: flex;
   justify-content: center;
 }
 
-.start-button {
-  width: 100%;
-  max-width: 300px;
-  height: 48px;
-  border-radius: var(--radius-md);
-  touch-action: manipulation;
-  font-size: var(--font-size-base);
-  font-weight: 500;
-  transition: all var(--transition-normal);
-}
-
-/* 问卷答题区域样式 */
-.survey-questions-container {
-  width: 100%;
-}
-
-.progress-container {
-  margin-bottom: var(--spacing-xl);
-}
-
-.progress-text {
-  text-align: right;
-  font-size: var(--font-size-xs);
-  color: var(--text-secondary);
-  margin-top: var(--spacing-xs);
-  font-weight: 500;
-}
-
-.question-container {
-  background-color: var(--card-background);
-  border-radius: var(--radius-lg);
-  padding: var(--spacing-lg);
-  box-shadow: var(--shadow-sm);
-  margin-bottom: var(--spacing-xl);
-  transition: box-shadow var(--transition-normal);
-}
-
-.question-container:hover {
-  box-shadow: var(--shadow-md);
-}
-
-.question-header {
+.footer-buttons {
+  padding: 16px 20px 24px;
+  background-color: white;
+  border-top: 0.5px solid #EFF2F6;
   display: flex;
-  align-items: center;
-  margin-bottom: var(--spacing-md);
-  padding-bottom: var(--spacing-sm);
-  border-bottom: 1px solid var(--border-color);
+  gap: 12px;
+  box-shadow: 0 -2px 10px rgba(0,0,0,0.02);
 }
 
-.question-number {
-  font-size: var(--font-size-sm);
-  color: var(--primary-color);
-  font-weight: 600;
-  background-color: var(--primary-light);
-  padding: 2px 8px;
-  border-radius: var(--radius-full);
-}
-
-.required-mark {
-  color: var(--danger-color);
-  margin-left: var(--spacing-xs);
-  font-size: var(--font-size-sm);
-  font-weight: 600;
-}
-
-.question-text {
-  font-size: var(--font-size-lg);
-  font-weight: 700;
-  margin-bottom: var(--spacing-lg);
-  line-height: 1.6;
-  color: var(--text-primary);
-}
-
-.options-container {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-sm);
-}
-
-.option-item {
-  padding: var(--spacing-md);
-  border: none;
-  border-radius: var(--radius-md);
-  transition: all var(--transition-normal);
-  touch-action: manipulation;
-  background-color: var(--card-background);
-}
-
-.option-item:hover {
-  background-color: var(--primary-light);
-}
-
-.option-item:active {
-  transform: scale(0.98);
-  background-color: var(--primary-light);
-}
-
-.input-answer {
-  width: 100%;
-  padding: var(--spacing-md);
-  border: 2px solid var(--border-color);
-  border-radius: var(--radius-md);
-  font-size: var(--font-size-base);
-  touch-action: manipulation;
-  transition: all var(--transition-normal);
-}
-
-.input-answer:focus {
-  outline: none;
-  border-color: var(--primary-color);
-  box-shadow: 0 0 0 3px var(--primary-light);
-}
-
-.navigation-buttons {
-  display: flex;
-  gap: var(--spacing-sm);
-  margin-top: var(--spacing-lg);
-  padding-bottom: var(--spacing-lg);
-  align-items: center;
-  justify-content: space-between;
-}
-
-.nav-button {
+.btn {
   flex: 1;
-  height: 48px;
-  border-radius: var(--radius-md);
-  touch-action: manipulation;
-  font-size: var(--font-size-base);
-  font-weight: 500;
-  transition: all var(--transition-normal);
-  min-width: 80px;
+  text-align: center;
+  padding: 14px 0;
+  border-radius: 40px;
+  font-weight: 600;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+  background: none;
 }
 
-.submit-button {
-  flex: 1.2;
-  height: 48px;
-  border-radius: var(--radius-md);
-  touch-action: manipulation;
-  font-size: var(--font-size-base);
-  font-weight: 500;
-  transition: all var(--transition-normal);
-  min-width: 100px;
+.btn-primary {
+  background-color: #1A73E8;
+  color: white;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
 }
 
-/* 自定义Vant组件样式 */
-:deep(.van-progress__bar) {
-  background-color: var(--primary-light);
+.btn-primary:active {
+  background-color: #0F5BB5;
+  transform: scale(0.97);
 }
 
-:deep(.van-progress__portion) {
-  background-color: var(--primary-color);
-  border-radius: var(--radius-sm);
+.btn-secondary {
+  background-color: #F0F2F5;
+  color: #2C3E50;
 }
 
-:deep(.van-radio__label) {
-  font-size: var(--font-size-base);
-  color: var(--text-primary);
+.btn-secondary:active {
+  background-color: #E4E8ED;
+  transform: scale(0.97);
 }
 
-:deep(.van-checkbox__label) {
-  font-size: var(--font-size-base);
-  color: var(--text-primary);
-}
-
-/* 确保 checkbox 显示为方形 */
-:deep(.van-checkbox__icon .van-icon) {
-  border-radius: 0 !important;
-}
-
-:deep(.van-checkbox__icon--checked .van-icon) {
-  border-radius: 0 !important;
-}
-
-:deep(.van-field__control) {
-  font-size: var(--font-size-base);
-  color: var(--text-primary);
-}
-
-:deep(.van-field__placeholder) {
-  color: var(--text-tertiary);
-}
-
-:deep(.van-button--primary) {
-  background-color: var(--primary-color);
-  border-color: var(--primary-color);
-  border-radius: var(--radius-md);
-}
-
-:deep(.van-button--primary:hover) {
-  background-color: var(--primary-dark);
-  border-color: var(--primary-dark);
-}
-
-:deep(.van-button--default) {
-  border-radius: var(--radius-md);
-  border-color: var(--border-color);
-}
-
-:deep(.van-button--default:hover) {
-  border-color: var(--primary-color);
-  color: var(--primary-color);
+.btn-disabled {
+  opacity: 0.5;
+  pointer-events: none;
 }
 
 /* 响应式调整 */
-@media (max-width: 768px) {
-  .survey-content {
-    padding: var(--spacing-md);
-  }
-  
-  .basic-info-container,
-  .question-container {
-    padding: var(--spacing-md);
-    margin-bottom: var(--spacing-lg);
-  }
-  
-  .survey-title {
-    font-size: var(--font-size-xl);
-  }
-  
-  .section-title {
-    font-size: var(--font-size-lg);
-  }
-  
-  .question-text {
-    font-size: var(--font-size-base);
-  }
-  
-  .navigation-buttons {
-    gap: var(--spacing-xs);
-  }
-}
-
 @media (max-width: 375px) {
-  .header {
-    padding: var(--spacing-sm);
-    font-size: var(--font-size-sm);
-  }
-  
-  .header-center {
-    font-size: var(--font-size-base);
-  }
-  
-  .survey-content {
-    padding: var(--spacing-sm);
-  }
-  
-  .basic-info-container,
-  .question-container {
-    padding: var(--spacing-sm);
-    margin-bottom: var(--spacing-md);
-  }
-  
-  .navigation-buttons {
-    flex-direction: row;
-    gap: var(--spacing-xs);
-    flex-wrap: nowrap;
-  }
-  
-  .nav-button {
-    flex: 1;
-    height: 44px;
-    font-size: var(--font-size-sm);
-    min-width: 70px;
-  }
-  
-  .submit-button {
-    flex: 1.2;
-    height: 44px;
-    font-size: var(--font-size-sm);
-    min-width: 90px;
-  }
-  
-  .start-button {
-    width: 100%;
-    height: 44px;
+  .survey-header {
+    padding: 10px 16px 8px 16px;
   }
   
   .survey-title {
-    font-size: var(--font-size-lg);
+    font-size: 18px;
   }
   
-  .section-title {
-    font-size: var(--font-size-base);
+  .survey-meta {
+    font-size: 12px;
+  }
+  
+  .basic-info-container {
+    padding: 16px;
+  }
+  
+  .basic-info-form {
+    gap: 16px;
+    margin-top: 16px;
+  }
+  
+  .question-area {
+    padding: 16px 16px 12px 16px;
+  }
+  
+  .question-card {
+    padding: 16px;
+    margin-bottom: 20px;
   }
   
   .question-text {
-    font-size: var(--font-size-sm);
+    font-size: 16px;
+    margin-bottom: 16px;
   }
   
   .option-item {
-    padding: var(--spacing-sm);
+    padding: 12px 14px;
   }
   
-  .input-answer,
-  .basic-info-input {
-    padding: var(--spacing-sm);
+  .option-label {
+    font-size: 15px;
+  }
+  
+  .text-input {
+    padding: 12px 14px;
+    font-size: 15px;
+  }
+  
+  .footer-buttons {
+    padding: 14px 16px 20px;
+    gap: 10px;
+  }
+  
+  .btn {
+    padding: 12px 0;
+    font-size: 15px;
+  }
+  
+  .start-survey-button {
+    margin-top: 24px;
   }
 }
 </style>

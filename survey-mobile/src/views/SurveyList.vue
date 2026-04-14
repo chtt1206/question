@@ -193,7 +193,7 @@ onMounted(async () => {
         :class="{ active: currentTab === 'completed' }"
         @click="switchTab('completed')"
       >
-        已完成
+        已结束
       </div>
     </div>
 
