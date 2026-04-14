@@ -120,18 +120,22 @@ export const surveyApi = {
         // 解析answers字段
         let answers = [];
         try {
+          // 首先获取所有非基础信息题
+          const allQuestions = survey.questions ? survey.questions.filter(q => q.questionType !== 'BASIC') : [];
+          
+          // 解析用户作答的题目
+          const answeredQuestions = {};
           if (record.answers) {
             const parsedAnswers = JSON.parse(record.answers);
-            // 构建答题详情（跳过基础信息题）
-            answers = parsedAnswers.map((answerItem, index) => {
+            parsedAnswers.forEach(answerItem => {
               // 找到对应的问题
               const question = survey.questions ? survey.questions.find(q => q.id === answerItem.questionId) : null;
               // 跳过基础信息题
               if (question && question.questionType === 'BASIC') {
-                return null;
+                return;
               }
               let userAnswer = '';
-              let questionText = question ? question.text : `问题 ${index + 1}`;
+              let questionText = question ? question.text : `问题`;
               let isCorrect = false;
 
               // 处理用户答案
@@ -167,16 +171,36 @@ export const surveyApi = {
                 }
               }
 
-              return {
+              answeredQuestions[answerItem.questionId] = {
                 questionId: answerItem.questionId,
                 questionText: questionText,
                 userAnswer: userAnswer,
                 correctAnswer: correctAnswer,
                 isCorrect: isCorrect,
+                isAnswered: true,
                 answerExplanation: question?.answerExplanation || '' // 答案解析
               };
-            }).filter(item => item !== null); // 过滤掉null值
+            });
           }
+          
+          // 构建所有题目的列表（包括未作答的）
+          answers = allQuestions.map((question, index) => {
+            if (answeredQuestions[question.id]) {
+              // 已作答的题目
+              return answeredQuestions[question.id];
+            } else {
+              // 未作答的题目
+              return {
+                questionId: question.id,
+                questionText: question.text,
+                userAnswer: '',
+                correctAnswer: '',
+                isCorrect: false,
+                isAnswered: false,
+                answerExplanation: question.answerExplanation || '' // 答案解析
+              };
+            }
+          });
         } catch (error) {
           console.error('解析答题详情失败:', error);
         }

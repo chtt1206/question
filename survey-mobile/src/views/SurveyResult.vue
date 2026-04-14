@@ -109,9 +109,9 @@ const reTakeSurvey = () => {
               <div class="question-title">
                 <span class="question-text">第{{ index + 1 }}题：{{ answer.questionText }}</span>
                 <span
-                  :class="['status-tag', answer.isCorrect ? 'correct' : 'wrong']"
+                  :class="['status-tag', answer.isAnswered ? (answer.isCorrect ? 'correct' : 'wrong') : 'unanswered']"
                 >
-                  {{ answer.isCorrect ? '正确' : '错误' }}
+                  {{ answer.isAnswered ? (answer.isCorrect ? '正确' : '错误') : '未作答' }}
                 </span>
               </div>
             </template>
@@ -119,12 +119,15 @@ const reTakeSurvey = () => {
             <van-cell >
             <template #default>
               <div class="answer-content">
-                <p v-if="!answer.isCorrect" class="user-answer">你的答案：{{ answer.userAnswer }}</p>
-                <p v-if="!answer.isCorrect && answer.correctAnswer" class="correct-answer">
+                <p v-if="answer.isAnswered && !answer.isCorrect" class="user-answer">你的答案：{{ answer.userAnswer }}</p>
+                <p v-if="answer.isAnswered && !answer.isCorrect && answer.correctAnswer" class="correct-answer">
                   正确答案：{{ answer.correctAnswer }}
                 </p>
-                <p v-if="!answer.isCorrect && answer.answerExplanation" class="answer-explanation">
+                <p v-if="answer.isAnswered && !answer.isCorrect && answer.answerExplanation" class="answer-explanation">
                   💡 答案解析：{{ answer.answerExplanation }}
+                </p>
+                <p v-if="!answer.isAnswered" class="unanswered-message">
+                  你未作答此题
                 </p>
               </div>
             </template>
@@ -449,6 +452,21 @@ const reTakeSurvey = () => {
 .status-tag.wrong {
   background-color: var(--danger-light);
   color: var(--danger-color);
+}
+
+.status-tag.unanswered {
+  background-color: var(--warning-light);
+  color: var(--warning-color);
+}
+
+.unanswered-message {
+  font-size: var(--font-size-sm);
+  color: var(--warning-color);
+  font-weight: 500;
+  line-height: 1.3;
+  padding: var(--spacing-sm);
+  background-color: var(--warning-light);
+  border-radius: var(--radius-sm);
 }
 
 .action-buttons {

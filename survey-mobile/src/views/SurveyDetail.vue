@@ -146,8 +146,8 @@ const startSurvey = () => {
 }
 
 // 提交问卷
-const submitSurvey = async () => {
-  if (!canSubmit.value) {
+const submitSurvey = async (isAutoSubmit = false) => {
+  if (!isAutoSubmit && !canSubmit.value) {
     showToast('请完成所有必答题')
     return
   }
@@ -183,7 +183,7 @@ const startCountdown = () => {
     } else {
       clearInterval(timer.value)
       showToast('时间到！自动提交')
-      submitSurvey()
+      submitSurvey(true) // 自动提交，不需要校验
     }
   }, 1000)
 }
@@ -202,7 +202,7 @@ onMounted(async () => {
     // 后端直接返回数据，没有 code 字段
     if (response) {
       survey.value = response
-      timeRemaining.value = response.timeLimit ? response.timeLimit * 60 : 0
+      timeRemaining.value = response.timeLimit ? Math.round(response.timeLimit * 60) : 0
       // 检查是否有基础信息题
       if (basicInfoQuestions.value.length === 0) {
         showBasicInfo.value = false

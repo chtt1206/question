@@ -297,6 +297,7 @@ const addQuestion = () => {
   newQuestion.options = [
     { text: '', isCorrect: false },
     { text: '', isCorrect: false },
+    { text: '', isCorrect: false },
     { text: '', isCorrect: false }
   ];
   newQuestion.correctOption = 0;
@@ -1058,11 +1059,11 @@ const removeOption = (index) => {
                   </div>
                   <div class="setting-field">
                     <label>⏱️ 答题时间要求 (分钟)</label>
-                    <a-input-number v-model:value="settings.timeLimit" placeholder="0表示不限时" />
+                    <a-input-number v-model:value="settings.timeLimit" placeholder="0表示不限时" :step="0.5" :precision="1" />
                   </div>
                   <div class="setting-field">
                     <label>🎯 通过考试分数</label>
-                    <a-input-number v-model:value="settings.passingScore" placeholder="设置通过考试的最低分数" />
+                    <a-input-number v-model:value="settings.passingScore" placeholder="设置通过考试的最低分数" :step="1" :precision="1" />
                   </div>
                 </div>
                 <div class="flex-between">
@@ -1196,11 +1197,11 @@ const removeOption = (index) => {
                   </div>
                   <div class="setting-field">
                     <label>⏱️ 答题时间要求 (分钟)</label>
-                    <a-input-number v-model:value="settings.timeLimit" placeholder="0表示不限时" />
+                    <a-input-number v-model:value="settings.timeLimit" placeholder="0表示不限时" :step="0.5" :precision="1" />
                   </div>
                   <div class="setting-field">
                     <label>🎯 通过考试分数</label>
-                    <a-input-number v-model:value="settings.passingScore" placeholder="设置通过考试的最低分数" />
+                    <a-input-number v-model:value="settings.passingScore" placeholder="设置通过考试的最低分数" :step="1" :precision="1" />
                   </div>
                 </div>
                 <div class="flex-between">
@@ -1469,7 +1470,7 @@ const removeOption = (index) => {
 }
 
 body {
-  background: #f0f2f6;
+  /* background: #f0f2f6; */
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   color: #1e293b;
   padding: 32px 40px;

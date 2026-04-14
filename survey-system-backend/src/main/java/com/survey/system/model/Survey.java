@@ -16,8 +16,8 @@ public class Survey {
     private LocalDateTime startTime;
     private LocalDateTime endTime;
     private Boolean allowRepeat;
-    private Integer timeLimit;
-    private Integer passingScore;
+    private Double timeLimit;
+    private Double passingScore;
     private String status; // DRAFT, PUBLISHED, EXPIRED
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
